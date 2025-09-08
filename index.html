@@ -1,11 +1,171 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8">
-    <title>Hello World</title>
+    <meta charset="UTF-8" />
+    <title>AVI vs AFI — Scatter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+      .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+      .controls label { font-size: 14px; }
+      #chart { width: 100%; max-width: 1100px; height: 650px; }
+      .note { max-width: 1100px; font-size: 14px; color: #444; }
+    </style>
   </head>
   <body>
-    <h1>Hello, World!</h1>
-    <p>This is my first GitHub Pages site.</p>
+    <h1>Availability vs Affordability of Mental Health Providers</h1>
+
+    <div class="controls">
+      <label>
+        Color by:
+        <select id="colorBy">
+          <option value="AFI_category" selected>AFI_category</option>
+          <option value="AVI_category">AVI_category</option>
+        </select>
+      </label>
+
+      <label>
+        State:
+        <select id="stateFilter">
+          <option value="__ALL__" selected>All states</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="chart"></div>
+    <p class="note">
+      Each point is a county. X = AVI_county (availability), Y = AFI_county (affordability).
+      Hover for details. Color indicates the selected category.
+    </p>
+
+    <script>
+      const DATA_URL = "data/dataset_for_public.json";
+
+      const CAT_ORDER = ["Low","Low Average","Average","Above Average","High"];
+      const COLORS = {
+        "Low": "#fef6e4",
+        "Low Average": "#fcd5a5",
+        "Average": "#f4a261",
+        "Above Average": "#a6d96a",
+        "High": "#1a9850",
+        "No data": "#eeeeee"
+      };
+
+      let RAW = [];   // full dataset
+      let CURRENT_COLOR_FIELD = "AFI_category";
+
+      const colorSelect = document.getElementById("colorBy");
+      const stateSelect = document.getElementById("stateFilter");
+
+      fetch(DATA_URL)
+        .then(r => r.json())
+        .then(rows => {
+          // Basic sanitize & numeric coercion
+          RAW = rows.map(d => ({
+            county_fips_str: d.county_fips_str,
+            median_fee: num(d.median_fee),
+            State: d.State,
+            pct_medicaid: num(d.pct_medicaid),
+            median_family_income: num(d.median_family_income),
+            disposable_income: num(d.disposable_income),
+            AVI_county: num(d.AVI_county),
+            AFI_county: num(d.AFI_county),
+            AVI_category: d.AVI_category || "No data",
+            AFI_category: d.AFI_category || "No data",
+          })).filter(d => isFinite(d.AVI_county) && isFinite(d.AFI_county));
+
+          // Populate state dropdown
+          const states = Array.from(new Set(RAW.map(d => d.State))).sort();
+          for (const s of states) {
+            const opt = document.createElement("option");
+            opt.value = s; opt.textContent = s;
+            stateSelect.appendChild(opt);
+          }
+
+          draw(); // initial
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById("chart").innerHTML = "Failed to load data.";
+        });
+
+      colorSelect.addEventListener("change", () => {
+        CURRENT_COLOR_FIELD = colorSelect.value;
+        draw();
+      });
+
+      stateSelect.addEventListener("change", draw);
+
+      function draw() {
+        const state = stateSelect.value;
+        const data = state === "__ALL__" ? RAW : RAW.filter(d => d.State === state);
+
+        // Group by chosen category to get a clean legend
+        const groups = {};
+        const catField = CURRENT_COLOR_FIELD;
+        for (const c of CAT_ORDER.concat("No data")) groups[c] = [];
+        for (const row of data) {
+          const cat = (row[catField] && COLORS[row[catField]]) ? row[catField] : "No data";
+          groups[cat].push(row);
+        }
+
+        const traces = Object.keys(groups)
+          .filter(cat => groups[cat].length)
+          .map(cat => {
+            const arr = groups[cat];
+            return {
+              type: "scattergl",
+              mode: "markers",
+              name: cat,
+              x: arr.map(d => d.AVI_county),
+              y: arr.map(d => d.AFI_county),
+              marker: {
+                color: COLORS[cat] || COLORS["No data"],
+                size: 8,
+                opacity: 0.75,
+                line: { width: 0 }
+              },
+              customdata: arr.map(d => ([
+                d.county_fips_str,
+                d.State,
+                d.median_fee,
+                d.pct_medicaid,
+                d.median_family_income,
+                d.disposable_income,
+                d.AVI_category,
+                d.AFI_category
+              ])),
+              hovertemplate:
+                "<b>FIPS</b>: %{customdata[0]}<br>" +
+                "<b>State</b>: %{customdata[1]}<br>" +
+                "<b>AVI</b>: %{x:.3f}<br>" +
+                "<b>AFI</b>: %{y:.3f}<br>" +
+                "<b>Median fee</b>: $%{customdata[2]:,.0f}<br>" +
+                "<b>% Medicaid</b>: %{customdata[3]:.1f}%<br>" +
+                "<b>Family income</b>: $%{customdata[4]:,.0f}<br>" +
+                "<b>Disposable income</b>: $%{customdata[5]:,.0f}<br>" +
+                "<b>AVI cat</b>: %{customdata[6]}<br>" +
+                "<b>AFI cat</b>: %{customdata[7]}<extra></extra>"
+            };
+          });
+
+        const layout = {
+          margin: { l: 70, r: 20, t: 50, b: 65 },
+          xaxis: { title: "Availability Index (AVI_county)", zeroline: false },
+          yaxis: { title: "Affordability Index (AFI_county)", zeroline: false },
+          legend: { orientation: "h", x: 0.5, xanchor: "center", y: -0.15 },
+          hovermode: "closest",
+          dragmode: "pan"
+        };
+
+        Plotly.newPlot("chart", traces, layout, {responsive: true});
+      }
+
+      function num(v) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : NaN;
+      }
+    </script>
   </body>
 </html>
