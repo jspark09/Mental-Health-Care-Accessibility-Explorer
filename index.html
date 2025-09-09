@@ -30,7 +30,7 @@
 
     /* Legend styles */
     #legend {
-      margin-left: auto; /* push legend to the right */
+      margin-left: auto;
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 6px 12px;
@@ -40,24 +40,9 @@
       border-radius: 8px;
       background: #fafafa;
     }
-    #legend .legend-title {
-      grid-column: 1 / -1;
-      font-size: 12px;
-      font-weight: 700;
-      color: #444;
-      margin-bottom: 2px;
-    }
-    #legend .swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      border: 1px solid rgba(0,0,0,0.15);
-    }
-    #legend .label {
-      font-size: 12px;
-      color: #333;
-      white-space: nowrap;
-    }
+    #legend .legend-title { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: #444; margin-bottom: 2px; }
+    #legend .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); }
+    #legend .label { font-size: 12px; color: #333; white-space: nowrap; }
 
     #map { width: 100%; height: 860px; max-width: var(--max); margin: 12px auto 0; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
     .note { max-width: var(--max); margin: 8px auto; color: #666; font-size: 13px; }
@@ -248,16 +233,38 @@
         });
       }
 
+      // ---- Alaska wrapping method (from Plotly community) ----
+      // Use Albers+fit for ALL, normal fit for other states, and a special wrapped lon range for AK
+      const isAll = (selectedState === "ALL");
+      const isAK  = (selectedState === "AK");
+
       const layout = {
         dragmode: false,
-        geo: {
+        geo: isAll ? {
           scope: "usa",
           projection: { type: "albers usa" },
-          fitbounds: (selectedState === "ALL") ? "Geojson" : "locations",
+          fitbounds: "Geojson",
           visible: false,
           showsubunits: true,
           subunitcolor: "black"
-        },
+        } : (isAK ? {
+          // Alaska: wrap longitudes to 0–360 to avoid antimeridian fit crash
+          projection: { type: "albers usa", scale: 3 },
+          center: { lat: 61, lon: -150 },
+          lonaxis: { range: [20, 380] },  // <-- key: wrapped longitude range
+          lataxis: { range: [50, 100] },
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        } : {
+          // Other single states: use the simpler fit on locations
+          scope: "usa",
+          projection: { type: "albers usa" },
+          fitbounds: "locations",
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        }),
         margin: { l: 0, r: 0, t: 0, b: 0 },
         legend: {
           title: { text: `${selectedMetric} Category`, font: { size: 16 } },
