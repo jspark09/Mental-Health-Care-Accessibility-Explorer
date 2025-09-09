@@ -1,227 +1,282 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Mental Health Access — US Counties</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-    <style>
-      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:22px}
-      h1{margin:0 0 6px 0}
-      .sub{color:#555;margin:0 0 16px 0}
-      .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:12px 0 8px}
-      .controls label{font-size:14px}
-      #map{width:100%;max-width:1200px;height:760px}
-      .note{max-width:1200px;font-size:13px;color:#555}
-      .warn{color:#b45309;background:#fff7ed;border:1px solid #fde68a;padding:8px 10px;border-radius:6px;display:none;max-width:1200px;margin:10px 0}
-      select{padding:6px 8px}
-    </style>
-  </head>
-  <body>
-    <h1>Mental Health Availability & Affordability</h1>
-    <p class="sub">Filter by metric and state. Hover counties for details.</p>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Accessibility Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root { --max: 1400px; }
+    * { box-sizing: border-box; }
+    body { margin: 16px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background-color: #f9f9f9; }
+    header { max-width: var(--max); margin: 0 auto 10px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p.sub { margin: 0; color: #555; }
+    #controls {
+      max-width: var(--max);
+      margin: 20px auto 10px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      padding: 12px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .control-group { display: flex; flex-direction: column; }
+    .control-group label { font-size: 12px; font-weight: 600; color: #444; margin-bottom: 4px; }
+    .control-group select { font-size: 16px; padding: 6px 8px; border-radius: 5px; border: 1px solid #ccc; }
 
-    <div id="warn" class="warn"></div>
+    /* Legend styles */
+    #legend {
+      margin-left: auto; /* push legend to the right */
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 12px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    #legend .legend-title {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      font-weight: 700;
+      color: #444;
+      margin-bottom: 2px;
+    }
+    #legend .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    #legend .label {
+      font-size: 12px;
+      color: #333;
+      white-space: nowrap;
+    }
 
-    <div class="controls">
-      <label>
-        Metric:
-        <select id="metric">
-          <option value="AFI_category" selected>Affordability (AFI_category)</option>
-          <option value="AVI_category">Availability (AVI_category)</option>
-        </select>
-      </label>
+    #map { width: 100%; height: 860px; max-width: var(--max); margin: 12px auto 0; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
+    .note { max-width: var(--max); margin: 8px auto; color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mental Health Care Accessibility Explorer — Affordability and Availability</h1>
+    <p class="sub">Interactive county-level choropleth</p>
+  </header>
 
-      <label>
-        State:
-        <select id="state">
-          <option value="__ALL__" selected>All states</option>
-        </select>
-      </label>
+  <div id="controls">
+    <div class="control-group">
+      <label for="metric-select">Metric</label>
+      <select id="metric-select">
+        <option value="AFI" selected>Affordability (AFI)</option>
+        <option value="AVI">Accessibility (AVI)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="state-select">State</label>
+      <select id="state-select">
+        <option value="ALL">-- All States --</option>
+      </select>
     </div>
 
-    <div id="map"></div>
-    <p class="note">Legend: Low → High (quintiles). “No data” = county missing category. Colors are consistent across both metrics.</p>
+    <!-- Legend container (auto-populated in JS) -->
+    <div id="legend" aria-label="Map Legend"></div>
+  </div>
 
-    <script>
-      // ----- CONFIG -----
-      const DATA_URL = "data/dataset_for_public.json";
-      const GEOJSON_URL = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json";
+  <div id="map"></div>
+  <div class="note">Data: counties_with_data.geojson (properties: county_fips_str, State, median_fee, pct_medicaid, median_family_income, disposable_income, AVI_/AFI_*)</div>
 
-      // Your raw data may use "0–20%" labels; normalize to semantic labels for a consistent legend.
-      const RAW_TO_SEM = {
-        "0–20%": "Low",
-        "20–40%": "Low Average",
-        "40–60%": "Average",
-        "60–80%": "Above Average",
-        "80–100%": "High"
-      };
-      const CAT_ORDER = ["Low","Low Average","Average","Above Average","High","No data"];
-      const COLORS = {
-        "Low": "#fef6e4",
-        "Low Average": "#fcd5a5",
-        "Average": "#f4a261",
-        "Above Average": "#a6d96a",
-        "High": "#1a9850",
-        "No data": "#eeeeee"
-      };
+  <script>
+  (async function () {
+    const metricSelect = document.getElementById("metric-select");
+    const stateSelect  = document.getElementById("state-select");
+    const mapDiv       = document.getElementById("map");
+    const legendDiv    = document.getElementById("legend");
 
-      const metricSel = document.getElementById("metric");
-      const stateSel  = document.getElementById("state");
-      const warnBox   = document.getElementById("warn");
-      const mapDiv    = document.getElementById("map");
+    let allFeatures = [];
+    let cleanGeojson;
+    let legendBuilt = false; // prevent rebuilding legend every update
 
-      let GEOJSON = null;
-      let ROWS = [];        // normalized array
-      let STATES = [];      // unique states
+    try {
+      const url = "data/counties_with_data.geojson";
+      const geojson = await fetch(url, { cache: "no-store" }).then(r => r.json());
+      allFeatures = (geojson && geojson.features) ? geojson.features : [];
 
-      // ----- LOAD -----
-      Promise.all([ fetch(DATA_URL).then(r => r.json()), fetch(GEOJSON_URL).then(r => r.json()) ])
-        .then(([rows, geo]) => {
-          GEOJSON = geo;
-          if (!Array.isArray(rows) || rows.length === 0) throw new Error("JSON empty or not an array.");
+      // Keep only valid geometries
+      allFeatures = allFeatures.filter(f => {
+        const g = f && f.geometry;
+        return g && g.type && Array.isArray(g.coordinates) && g.coordinates.length > 0;
+      });
 
-          // Normalize rows
-          ROWS = rows.map(d => {
-            // figure out state key (State vs state_name)
-            const state = d.State ?? d.state_name ?? d.state ?? null;
+      // Optional: log any features missing county_fips_str
+      const missingFIPS = allFeatures.filter(f => !(f.properties && f.properties.county_fips_str));
+      if (missingFIPS.length) {
+        console.warn("Missing county_fips_str for features:", missingFIPS.slice(0, 10), `(+${Math.max(0, missingFIPS.length-10)} more)`);
+      }
 
-            // county_fips_str should be 5 chars
-            let fips = d.county_fips_str ?? d.county_fips ?? null;
-            if (fips != null) fips = String(fips).padStart(5, "0");
+      cleanGeojson = { type: "FeatureCollection", features: allFeatures };
+    } catch (err) {
+      mapDiv.innerHTML = `<h2>Error loading GeoJSON data.</h2><p>${err.message}</p>`;
+      return;
+    }
 
-            // map category labels if using 0–20% etc.
-            const avi_cat = normalizeCat(d.AVI_category);
-            const afi_cat = normalizeCat(d.AFI_category);
+    function populateStates() {
+      const stateNames = new Set(allFeatures.map(f => f.properties?.State).filter(Boolean));
+      [...stateNames].sort().forEach(stateName => {
+        const opt = document.createElement("option");
+        opt.value = stateName;
+        opt.textContent = stateName;
+        stateSelect.appendChild(opt);
+      });
+    }
 
-            // keep optional continuous values for hover if present
-            const avi_val = num(d.AVI_county ?? d.AVI_county_wins_05 ?? d.AVI_county_wins);
-            const afi_val = num(d.AFI_county ?? d.AFI_county_wins_05 ?? d.AFI_county_wins);
+    // Shared categories and colors (used for both map and legend)
+    const catOrder = ["Low", "Low Average", "Average", "Above Average", "High", "No Data"];
+    const colorMap = {
+      "Low":           "#fef6e4",
+      "Low Average":   "#fcd5a5",
+      "Average":       "#f4a261",
+      "Above Average": "#a6d96a",
+      "High":          "#1a9850",
+      "No Data":       "#ededed"
+    };
 
-            const county = d.NAMELSAD ?? d.county_name ?? null;
+    function buildLegend(selectedMetric) {
+      if (legendBuilt) return;
+      legendDiv.innerHTML = ""; // clear just in case
+      const title = document.createElement("div");
+      title.className = "legend-title";
+      title.textContent = `${selectedMetric} Category`;
+      legendDiv.appendChild(title);
 
-            return {
-              fips, state, county,
-              AVI_category: avi_cat,
-              AFI_category: afi_cat,
-              AVI_val: avi_val,
-              AFI_val: afi_val
-            };
-          }).filter(r => r.fips); // must have fips to map
+      for (const cat of catOrder) {
+        const sw = document.createElement("div");
+        sw.className = "swatch";
+        sw.style.background = colorMap[cat];
 
-          // Populate state dropdown
-          STATES = Array.from(new Set(ROWS.map(r => r.state).filter(Boolean))).sort();
-          for (const s of STATES) {
-            const opt = document.createElement("option");
-            opt.value = s; opt.textContent = s;
-            stateSel.appendChild(opt);
-          }
+        const lab = document.createElement("div");
+        lab.className = "label";
+        lab.textContent = cat;
 
-          draw(); // initial
-        })
-        .catch(err => {
-          console.error(err);
-          mapDiv.innerHTML = "Failed to load data.";
-          showWarn(err.message || String(err));
-        });
+        legendDiv.appendChild(sw);
+        legendDiv.appendChild(lab);
+      }
+      legendBuilt = true;
+    }
 
-      metricSel.addEventListener("change", draw);
-      stateSel.addEventListener("change", draw);
+    function updateLegendTitle(selectedMetric) {
+      const titleEl = legendDiv.querySelector(".legend-title");
+      if (titleEl) titleEl.textContent = `${selectedMetric} Category`;
+    }
 
-      // ----- DRAW -----
-      function draw() {
-        const metric = metricSel.value;         // "AFI_category" or "AVI_category"
-        const state  = stateSel.value;
+    function updateMap() {
+      const selectedMetric = metricSelect.value;                // "AFI" or "AVI"
+      const categoryCol    = `${selectedMetric}_category`;      // e.g., "AFI_category"
+      const valueCol       = `${selectedMetric}_county`;        // e.g., "AFI_county"
+      const selectedState  = stateSelect.value;                 // "ALL" or a state name
 
-        const data = (state === "__ALL__") ? ROWS : ROWS.filter(r => r.state === state);
+      // Build legend once; update title on metric change
+      buildLegend(selectedMetric);
+      updateLegendTitle(selectedMetric);
 
-        // Build arrays for Plotly
-        const locations = data.map(r => r.fips);
-        const zCats     = data.map(r => r[metric] ?? "No data");
-        const hoverText = data.map(r => {
-          const avi = formatCat(r.AVI_category);
-          const afi = formatCat(r.AFI_category);
-          const aviVal = (isFinite(r.AVI_val) ? r.AVI_val.toFixed(3) : "N/A");
-          const afiVal = (isFinite(r.AFI_val) ? r.AFI_val.toFixed(3) : "N/A");
-          return `<b>${escapeHtml(r.county ?? "County")}, ${escapeHtml(r.state ?? "")}</b><br>` +
-                 `AVI: <b>${avi}</b> (${aviVal})<br>` +
-                 `AFI: <b>${afi}</b> (${afiVal})<br>` +
-                 `FIPS: ${r.fips}`;
-        });
+      const features = (selectedState === "ALL")
+        ? allFeatures
+        : allFeatures.filter(f => f.properties?.State === selectedState);
 
-        // Map categories to fixed colors
-        const zColors = zCats.map(c => COLORS[c] || COLORS["No data"]);
+      const perCat = {};
+      catOrder.forEach(c => perCat[c] = { locations: [], custom: [] });
 
-        // For a categorical choropleth in JS, we pass colors via marker colorscale by supplying z as dummy
-        // Simpler: use choropleth with 'locations' + geojson and supply 'marker.line.width=0' and 'showscale=false'
-        const trace = {
+      function getLoc(props, feature) {
+        return String(props?.county_fips_str || feature?.id || props?.id || "").padStart(5, "0");
+      }
+
+      for (const f of features) {
+        const p = f.properties || {};
+        if (!p.county_fips_str) continue;
+
+        let cat = p[categoryCol];
+        // normalize legacy labels
+        if (cat === "0–20%") cat = "Low";
+        else if (cat === "20–40%") cat = "Low Average";
+        else if (cat === "40–60%") cat = "Average";
+        else if (cat === "60–80%") cat = "Above Average";
+        else if (cat === "80–100%") cat = "High";
+        else if (typeof cat === "string" && cat.toLowerCase() === "no data") cat = "No Data";
+
+        if (!catOrder.includes(cat)) continue;
+
+        const loc = getLoc(p, f);
+        perCat[cat].locations.push(loc);
+        perCat[cat].custom.push([
+          p.State ?? "",         // 0
+          loc,                   // 1: FIPS
+          p[valueCol] ?? null,   // 2: metric value
+          p.median_fee ?? null,  // 3
+          cat                    // 4: category label
+        ]);
+      }
+
+      const traces = [];
+      for (const cat of catOrder) {
+        const data = perCat[cat];
+        if (!data.locations.length) continue;
+
+        const col = colorMap[cat];
+        traces.push({
           type: "choropleth",
-          geojson: GEOJSON,
-          featureidkey: "id",
-          locations: locations,
-          z: locations.map(() => 1),         // dummy
-          text: hoverText,
-          hovertemplate: "%{text}<extra></extra>",
-          marker: { line: { width: 0 } },
+          name: cat,
+          locations: data.locations,
+          z: new Array(data.locations.length).fill(1),
+          geojson: cleanGeojson,
+          featureidkey: "properties.county_fips_str",
+          colorscale: [[0, col], [1, col]],
           showscale: false,
-          // use per-location color by specifying 'colorscale' + 'z' won't help; instead, use 'marker' with 'colors' isn't supported.
-          // Workaround: split by category to multiple traces with distinct colors.
-        };
+          marker: { line: { width: 0.2, color: "#666" } },
+          hoverinfo: "skip",
+          customdata: data.custom,
+          hovertemplate:
+            "State: %{customdata[0]}<br>" +
+            "FIPS: %{customdata[1]}<br>" +
+            `${selectedMetric} category: %{customdata[4]}<br>` +
+            `${selectedMetric} (raw): %{customdata[2]:.3f}<br>` +
+            "Median fee: $%{customdata[3]:,.0f}<extra></extra>"
+        });
+      }
 
-        // Split into per-category traces for true categorical colors + legend
-        const traces = [];
-        for (const cat of CAT_ORDER) {
-          const idx = data.reduce((acc, r, i) => {
-            if ((r[metric] ?? "No data") === cat) acc.push(i);
-            return acc;
-          }, []);
-          if (!idx.length) continue;
-          traces.push({
-            type: "choropleth",
-            name: cat,
-            geojson: GEOJSON,
-            featureidkey: "id",
-            locations: idx.map(i => locations[i]),
-            z: idx.map(() => 1),
-            hovertext: idx.map(i => hoverText[i]),
-            hovertemplate: "%{hovertext}<extra></extra>",
-            marker: { line: { width: 0 } },
-            showscale: false,
-            colorscale: [[0, COLORS[cat]], [1, COLORS[cat]]]
-          });
+      const layout = {
+        dragmode: false,
+        geo: {
+          scope: "usa",
+          projection: { type: "albers usa" },
+          fitbounds: (selectedState === "ALL") ? "Geojson" : "locations",
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        },
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        legend: {
+          title: { text: `${selectedMetric} Category`, font: { size: 16 } },
+          font: { size: 14 },
+          orientation: "h",
+          yanchor: "bottom", y: -0.08,
+          xanchor: "center", x: 0.5
         }
+      };
 
-        const layout = {
-          margin: { l: 0, r: 0, t: 20, b: 0 },
-          legend: { orientation: "h", x: 0.5, xanchor: "center", y: -0.05 },
-          geo: {
-            scope: "usa",
-            fitbounds: "locations",
-            visible: false,
-            projection: { type: "albers usa" },
-            showlakes: false,
-            showcountries: false,
-            showsubunits: true,
-            subunitcolor: "black"
-          }
-        };
+      Plotly.newPlot(mapDiv, traces, layout, { responsive: true, displayModeBar: true });
+    }
 
-        Plotly.react("map", traces, layout, {responsive: true});
-      }
+    populateStates();
+    updateMap();
 
-      // ----- HELPERS -----
-      function normalizeCat(v) {
-        if (v == null || v === "") return "No data";
-        const s = String(v).trim();
-        // map raw "0–20%" style to semantic; otherwise pass through if already semantic
-        return RAW_TO_SEM[s] || (CAT_ORDER.includes(s) ? s : "No data");
-      }
-      function formatCat(s) { return s ?? "No data"; }
-      function num(v){ const n = Number(v); return Number.isFinite(n) ? n : NaN; }
-      function showWarn(msg){ warnBox.style.display="block"; warnBox.innerHTML = msg; }
-      function escapeHtml(str){
-        return String(str ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-      }
-    </script>
-  </body>
+    metricSelect.addEventListener("change", updateMap);
+    stateSelect.addEventListener("change", updateMap);
+  })();
+  </script>
+</body>
 </html>
