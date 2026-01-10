@@ -223,10 +223,6 @@
       <span class="stat-label">Sample Size</span>
       <span class="stat-value" id="n-value">—</span>
     </div>
-    <div class="stat-item">
-      <span class="stat-label">R² (Variance Explained)</span>
-      <span class="stat-value" id="r2-value">—</span>
-    </div>
   </div>
 
   <div id="plot"></div>
@@ -240,7 +236,6 @@
     const plotDiv = document.getElementById("plot");
     const corrValue = document.getElementById("corr-value");
     const nValue = document.getElementById("n-value");
-    const r2Value = document.getElementById("r2-value");
 
     let allFeatures = [];
 
@@ -351,20 +346,18 @@
         plotDiv.innerHTML = '<div class="loading">No valid data for selected variables</div>';
         corrValue.textContent = "—";
         nValue.textContent = "0";
-        r2Value.textContent = "—";
         return;
       }
 
       // Calculate correlation
       const xVals = data.map(d => d.x);
       const yVals = data.map(d => d.y);
-      const { r, r2 } = calculateCorrelation(xVals, yVals);
+      const { r } = calculateCorrelation(xVals, yVals);
       const { slope, intercept } = calculateTrendline(xVals, yVals);
 
       // Update stats
       corrValue.textContent = r.toFixed(3);
       nValue.textContent = data.length.toLocaleString();
-      r2Value.textContent = r2.toFixed(3);
 
       // Group by color variable
       const groups = {};
