@@ -149,14 +149,13 @@
     }
 
     // Shared categories and colors (used for both map and legend)
-    // Using quintile-based color scheme matching calculator.html
     const catOrder = ["Low", "Low Average", "Average", "Above Average", "High", "No Data"];
     const colorMap = {
-      "Low":           "#1a9850",  // Bottom 20% - green (lowest burden)
-      "Low Average":   "#91cf60",  // 20-40% - light green
-      "Average":       "#fee08b",  // 40-60% - yellow
-      "Above Average": "#fc8d59",  // 60-80% - orange
-      "High":          "#d73027",  // Top 20% - red (highest burden)
+      "Low":           "#fef6e4",  // pale sand (very low accessibility / high burden)
+      "Low Average":   "#fcd5a5",  // warm tan
+      "Average":       "#f4a261",  // desert orange
+      "Above Average": "#a6d96a",  // fresh green
+      "High":          "#1a9850",  // lush deep green (best accessibility / low burden)
       "No Data":       "#ededed"
     };
 
