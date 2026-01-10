@@ -273,10 +273,8 @@
           projection: { type: "albers usa" },
           fitbounds: "Geojson",
           visible: false,
-          showland: true,
-          landcolor: "#ffffff",
           showsubunits: true,
-          subunitcolor: "#999"
+          subunitcolor: "black"
         } : (isAK ? {
           // Alaska: wrap longitudes to 0–360 to avoid antimeridian fit crash
           projection: { type: "albers usa", scale: 3 },
@@ -284,20 +282,16 @@
           lonaxis: { range: [20, 380] },  // <-- key: wrapped longitude range
           lataxis: { range: [50, 100] },
           visible: false,
-          showland: true,
-          landcolor: "#ffffff",
           showsubunits: true,
-          subunitcolor: "#999"
+          subunitcolor: "black"
         } : {
           // Other single states: use the simpler fit on locations
           scope: "usa",
           projection: { type: "albers usa" },
           fitbounds: "locations",
           visible: false,
-          showland: true,
-          landcolor: "#ffffff",
           showsubunits: true,
-          subunitcolor: "#999"
+          subunitcolor: "black"
         }),
         margin: { l: 0, r: 0, t: 0, b: 0 },
         legend: {
