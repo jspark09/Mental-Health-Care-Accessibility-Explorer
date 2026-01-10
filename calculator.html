@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Affordability Scenario Calculator</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root { --max: 1400px; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    nav {
+      max-width: var(--max);
+      margin: 0 auto 20px;
+      padding: 12px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    nav a {
+      color: #1a9850;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    header {
+      max-width: var(--max);
+      margin: 0 auto 10px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+
+    p.sub {
+      margin: 0;
+      color: #555;
+    }
+
+    #controls {
+      max-width: var(--max);
+      margin: 20px auto 10px;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .control-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .control-group select {
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .slider-header label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .slider-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a9850;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #1a9850;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #1a9850;
+      cursor: pointer;
+      border: none;
+    }
+
+    .scenario-description {
+      background-color: #f0f7f4;
+      padding: 16px;
+      border-radius: 6px;
+      border-left: 4px solid #1a9850;
+      margin-top: 16px;
+      font-size: 14px;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    .scenario-description strong {
+      color: #1a9850;
+    }
+
+    #stats-panel {
+      max-width: var(--max);
+      margin: 12px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a9850;
+    }
+
+    .stat-value.warning {
+      color: #f4a261;
+    }
+
+    .stat-value.alert {
+      color: #e63946;
+    }
+
+    #map {
+      width: 100%;
+      height: 700px;
+      max-width: var(--max);
+      margin: 12px auto 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+
+    .note {
+      max-width: var(--max);
+      margin: 8px auto;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    /* Legend styles */
+    #legend {
+      max-width: var(--max);
+      margin: 12px auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    .legend-label {
+      font-size: 13px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="landing.html">← Back to Home</a>
+  </nav>
+
+  <header>
+    <h1>Affordability Scenario Calculator</h1>
+    <p class="sub">Model different insurance payment scenarios and their impact on mental health care affordability</p>
+  </header>
+
+  <div id="controls">
+    <div class="control-row">
+      <div class="slider-group">
+        <div class="slider-header">
+          <label for="sessions-slider">Number of Sessions</label>
+          <span class="slider-value" id="sessions-value">10</span>
+        </div>
+        <input type="range" id="sessions-slider" min="1" max="52" value="10" step="1">
+      </div>
+
+      <div class="control-group">
+        <label for="scenario-select">Payment Scenario</label>
+        <select id="scenario-select">
+          <option value="cash">Cash Payment (no insurance)</option>
+          <option value="copay20">Copay: $20 per session</option>
+          <option value="copay30">Copay: $30 per session</option>
+          <option value="copay40">Copay: $40 per session</option>
+          <option value="deductible1000">Deductible $1,000 + 20% coinsurance</option>
+          <option value="deductible2000">Deductible $2,000 + 20% coinsurance</option>
+          <option value="deductible3000">Deductible $3,000 + 20% coinsurance</option>
+          <option value="sliding">Sliding Scale (30% discount)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="scenario-description" id="scenario-desc">
+      Select a payment scenario to see the description.
+    </div>
+  </div>
+
+  <div id="stats-panel">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-label">Median AFI</span>
+        <span class="stat-value" id="median-afi">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Min AFI</span>
+        <span class="stat-value" id="min-afi">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Max AFI</span>
+        <span class="stat-value" id="max-afi">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Counties AFI > 5%</span>
+        <span class="stat-value warning" id="high-burden">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Counties AFI > 10%</span>
+        <span class="stat-value alert" id="severe-burden">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="legend"></div>
+  <div id="map"></div>
+  <div class="note">AFI (Affordability Index) = Total out-of-pocket cost / Disposable income × 100. Higher values indicate greater financial burden.</div>
+
+  <script>
+  (async function () {
+    const sessionsSlider = document.getElementById("sessions-slider");
+    const sessionsValue = document.getElementById("sessions-value");
+    const scenarioSelect = document.getElementById("scenario-select");
+    const scenarioDesc = document.getElementById("scenario-desc");
+    const mapDiv = document.getElementById("map");
+    const legendDiv = document.getElementById("legend");
+
+    const medianAfiEl = document.getElementById("median-afi");
+    const minAfiEl = document.getElementById("min-afi");
+    const maxAfiEl = document.getElementById("max-afi");
+    const highBurdenEl = document.getElementById("high-burden");
+    const severeBurdenEl = document.getElementById("severe-burden");
+
+    let allFeatures = [];
+    let cleanGeojson;
+
+    // Scenario descriptions
+    const scenarioDescriptions = {
+      cash: "<strong>Cash Payment:</strong> Patient pays the full median provider fee for each session with no insurance coverage. Total cost = median fee × number of sessions.",
+      copay20: "<strong>Copay $20:</strong> Patient pays a fixed $20 copayment per session. Insurance covers the remaining cost. Total cost = $20 × number of sessions.",
+      copay30: "<strong>Copay $30:</strong> Patient pays a fixed $30 copayment per session. Insurance covers the remaining cost. Total cost = $30 × number of sessions.",
+      copay40: "<strong>Copay $40:</strong> Patient pays a fixed $40 copayment per session. Insurance covers the remaining cost. Total cost = $40 × number of sessions.",
+      deductible1000: "<strong>Deductible $1,000 + 20% Coinsurance:</strong> Patient pays the full cost until reaching $1,000 deductible, then pays 20% of remaining costs. Total cost = min(total allowed, $1,000) + 20% × max(total allowed - $1,000, 0).",
+      deductible2000: "<strong>Deductible $2,000 + 20% Coinsurance:</strong> Patient pays the full cost until reaching $2,000 deductible, then pays 20% of remaining costs. Total cost = min(total allowed, $2,000) + 20% × max(total allowed - $2,000, 0).",
+      deductible3000: "<strong>Deductible $3,000 + 20% Coinsurance:</strong> Patient pays the full cost until reaching $3,000 deductible, then pays 20% of remaining costs. Total cost = min(total allowed, $3,000) + 20% × max(total allowed - $3,000, 0).",
+      sliding: "<strong>Sliding Scale:</strong> Discount based on county's percentage of providers offering sliding scale fees (average 30% discount). Total cost = median fee × (1 - 0.30 × pct_sliding_scale) × number of sessions."
+    };
+
+    try {
+      mapDiv.innerHTML = '<div class="loading">Loading data...</div>';
+      const url = "data/counties_with_data.geojson";
+      const geojson = await fetch(url, { cache: "no-store" }).then(r => r.json());
+      allFeatures = (geojson && geojson.features) ? geojson.features : [];
+
+      allFeatures = allFeatures.filter(f => {
+        const g = f && f.geometry;
+        return g && g.type && Array.isArray(g.coordinates) && g.coordinates.length > 0;
+      });
+
+      cleanGeojson = { type: "FeatureCollection", features: allFeatures };
+    } catch (err) {
+      mapDiv.innerHTML = `<div class="loading"><h2>Error loading data</h2><p>${err.message}</p></div>`;
+      return;
+    }
+
+    // AFI categories and colors
+    const afiRanges = [
+      { max: 2, label: "Very Low (< 2%)", color: "#1a9850" },
+      { max: 5, label: "Low (2-5%)", color: "#a6d96a" },
+      { max: 10, label: "Moderate (5-10%)", color: "#f4a261" },
+      { max: 15, label: "High (10-15%)", color: "#e76f51" },
+      { max: Infinity, label: "Very High (> 15%)", color: "#e63946" }
+    ];
+
+    function buildLegend() {
+      legendDiv.innerHTML = "";
+      for (const range of afiRanges) {
+        const item = document.createElement("div");
+        item.className = "legend-item";
+
+        const swatch = document.createElement("div");
+        swatch.className = "legend-swatch";
+        swatch.style.backgroundColor = range.color;
+
+        const label = document.createElement("span");
+        label.className = "legend-label";
+        label.textContent = range.label;
+
+        item.appendChild(swatch);
+        item.appendChild(label);
+        legendDiv.appendChild(item);
+      }
+    }
+
+    function calculateAFI(medianFee, disposableIncome, pctSlidingScale, sessions, scenario) {
+      if (!medianFee || !disposableIncome || disposableIncome <= 0) return null;
+
+      let outOfPocket = 0;
+
+      switch (scenario) {
+        case "cash":
+          outOfPocket = medianFee * sessions;
+          break;
+        case "copay20":
+          outOfPocket = 20 * sessions;
+          break;
+        case "copay30":
+          outOfPocket = 30 * sessions;
+          break;
+        case "copay40":
+          outOfPocket = 40 * sessions;
+          break;
+        case "deductible1000": {
+          const totalAllowed = medianFee * sessions;
+          const deductible = 1000;
+          outOfPocket = Math.min(totalAllowed, deductible) + 0.20 * Math.max(totalAllowed - deductible, 0);
+          break;
+        }
+        case "deductible2000": {
+          const totalAllowed = medianFee * sessions;
+          const deductible = 2000;
+          outOfPocket = Math.min(totalAllowed, deductible) + 0.20 * Math.max(totalAllowed - deductible, 0);
+          break;
+        }
+        case "deductible3000": {
+          const totalAllowed = medianFee * sessions;
+          const deductible = 3000;
+          outOfPocket = Math.min(totalAllowed, deductible) + 0.20 * Math.max(totalAllowed - deductible, 0);
+          break;
+        }
+        case "sliding": {
+          const pct = (pctSlidingScale || 0) / 100; // convert percentage to decimal
+          const discount = 0.30 * pct;
+          outOfPocket = medianFee * (1 - discount) * sessions;
+          break;
+        }
+      }
+
+      return (outOfPocket / disposableIncome) * 100;
+    }
+
+    function getColorForAFI(afi) {
+      if (afi == null) return "#ededed";
+      for (const range of afiRanges) {
+        if (afi < range.max) return range.color;
+      }
+      return "#e63946";
+    }
+
+    function updateMap() {
+      const sessions = parseInt(sessionsSlider.value);
+      const scenario = scenarioSelect.value;
+
+      sessionsValue.textContent = sessions;
+      scenarioDesc.innerHTML = scenarioDescriptions[scenario];
+
+      // Calculate AFI for each county
+      const countyData = [];
+      for (const f of allFeatures) {
+        const p = f.properties || {};
+        if (!p.county_fips_str) continue;
+
+        const afi = calculateAFI(
+          p.median_fee,
+          p.disposable_income,
+          p.pct_sliding_scale,
+          sessions,
+          scenario
+        );
+
+        if (afi != null) {
+          countyData.push({
+            fips: String(p.county_fips_str).padStart(5, "0"),
+            state: p.State || "",
+            afi: afi,
+            medianFee: p.median_fee,
+            disposableIncome: p.disposable_income,
+            color: getColorForAFI(afi)
+          });
+        }
+      }
+
+      // Calculate statistics
+      const afiValues = countyData.map(d => d.afi).sort((a, b) => a - b);
+      const median = afiValues[Math.floor(afiValues.length / 2)] || 0;
+      const min = afiValues[0] || 0;
+      const max = afiValues[afiValues.length - 1] || 0;
+      const highBurden = afiValues.filter(v => v > 5).length;
+      const severeBurden = afiValues.filter(v => v > 10).length;
+
+      medianAfiEl.textContent = median.toFixed(2) + "%";
+      minAfiEl.textContent = min.toFixed(2) + "%";
+      maxAfiEl.textContent = max.toFixed(2) + "%";
+      highBurdenEl.textContent = highBurden.toLocaleString();
+      severeBurdenEl.textContent = severeBurden.toLocaleString();
+
+      // Group by color
+      const colorGroups = {};
+      for (const d of countyData) {
+        if (!colorGroups[d.color]) colorGroups[d.color] = [];
+        colorGroups[d.color].push(d);
+      }
+
+      // Create traces
+      const traces = [];
+      for (const [color, data] of Object.entries(colorGroups)) {
+        traces.push({
+          type: "choropleth",
+          locations: data.map(d => d.fips),
+          z: new Array(data.length).fill(1),
+          geojson: cleanGeojson,
+          featureidkey: "properties.county_fips_str",
+          colorscale: [[0, color], [1, color]],
+          showscale: false,
+          marker: { line: { width: 0.3, color: "#999" } },
+          hoverinfo: "skip",
+          customdata: data.map(d => [d.state, d.fips, d.afi, d.medianFee, d.disposableIncome]),
+          hovertemplate:
+            "<b>%{customdata[0]}</b><br>" +
+            "FIPS: %{customdata[1]}<br>" +
+            "AFI: %{customdata[2]:.2f}%<br>" +
+            "Median Fee: $%{customdata[3]:,.0f}<br>" +
+            "Disposable Income: $%{customdata[4]:,.0f}<extra></extra>",
+          showlegend: false
+        });
+      }
+
+      const layout = {
+        dragmode: false,
+        geo: {
+          scope: "usa",
+          projection: { type: "albers usa" },
+          fitbounds: "geojson",
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        },
+        margin: { l: 0, r: 0, t: 0, b: 0 }
+      };
+
+      const config = {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false
+      };
+
+      Plotly.newPlot(mapDiv, traces, layout, config);
+    }
+
+    buildLegend();
+    updateMap();
+
+    sessionsSlider.addEventListener("input", updateMap);
+    scenarioSelect.addEventListener("change", updateMap);
+  })();
+  </script>
+</body>
+</html>

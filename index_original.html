@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Accessibility Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root { --max: 1400px; }
+    * { box-sizing: border-box; }
+    body { margin: 16px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background-color: #f9f9f9; }
+    header { max-width: var(--max); margin: 0 auto 10px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p.sub { margin: 0; color: #555; }
+    #controls {
+      max-width: var(--max);
+      margin: 20px auto 10px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      padding: 12px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .control-group { display: flex; flex-direction: column; }
+    .control-group label { font-size: 12px; font-weight: 600; color: #444; margin-bottom: 4px; }
+    .control-group select { font-size: 16px; padding: 6px 8px; border-radius: 5px; border: 1px solid #ccc; }
+
+    /* Legend styles */
+    #legend {
+      margin-left: auto;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 12px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    #legend .legend-title { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: #444; margin-bottom: 2px; }
+    #legend .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); }
+    #legend .label { font-size: 12px; color: #333; white-space: nowrap; }
+
+    #map { width: 100%; height: 860px; max-width: var(--max); margin: 12px auto 0; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
+    .note { max-width: var(--max); margin: 8px auto; color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mental Health Care Accessibility Explorer — Affordability and Availability</h1>
+    <p class="sub">Interactive county-level choropleth</p>
+  </header>
+
+  <div id="controls">
+    <div class="control-group">
+      <label for="metric-select">Metric</label>
+      <select id="metric-select">
+        <option value="AFI" selected>Affordability (AFI)</option>
+        <option value="AVI">Availability (AVI)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="state-select">State</label>
+      <select id="state-select">
+        <option value="ALL">-- All States --</option>
+      </select>
+    </div>
+
+    <!-- Legend container (auto-populated in JS) -->
+    <div id="legend" aria-label="Map Legend"></div>
+  </div>
+
+  <div id="map"></div>
+  <div class="note">Data: counties_with_data.geojson (properties: county_fips_str, State, median_fee, pct_medicaid, median_family_income, disposable_income, AVI_/AFI_*)</div>
+
+  <script>
+  (async function () {
+    const metricSelect = document.getElementById("metric-select");
+    const stateSelect  = document.getElementById("state-select");
+    const mapDiv       = document.getElementById("map");
+    const legendDiv    = document.getElementById("legend");
+
+    let allFeatures = [];
+    let cleanGeojson;
+    let legendBuilt = false; // prevent rebuilding legend every update
+
+    try {
+      const url = "data/counties_with_data.geojson";
+      const geojson = await fetch(url, { cache: "no-store" }).then(r => r.json());
+      allFeatures = (geojson && geojson.features) ? geojson.features : [];
+
+      // Keep only valid geometries
+      allFeatures = allFeatures.filter(f => {
+        const g = f && f.geometry;
+        return g && g.type && Array.isArray(g.coordinates) && g.coordinates.length > 0;
+      });
+
+      // Optional: log any features missing county_fips_str
+      const missingFIPS = allFeatures.filter(f => !(f.properties && f.properties.county_fips_str));
+      if (missingFIPS.length) {
+        console.warn("Missing county_fips_str for features:", missingFIPS.slice(0, 10), `(+${Math.max(0, missingFIPS.length-10)} more)`);
+      }
+
+      cleanGeojson = { type: "FeatureCollection", features: allFeatures };
+    } catch (err) {
+      mapDiv.innerHTML = `<h2>Error loading GeoJSON data.</h2><p>${err.message}</p>`;
+      return;
+    }
+
+    function populateStates() {
+      const stateNames = new Set(allFeatures.map(f => f.properties?.State).filter(Boolean));
+      [...stateNames].sort().forEach(stateName => {
+        const opt = document.createElement("option");
+        opt.value = stateName;
+        opt.textContent = stateName;
+        stateSelect.appendChild(opt);
+      });
+    }
+
+    // Shared categories and colors (used for both map and legend)
+    const catOrder = ["Low", "Low Average", "Average", "Above Average", "High", "No Data"];
+    const colorMap = {
+      "Low":           "#fef6e4",
+      "Low Average":   "#fcd5a5",
+      "Average":       "#f4a261",
+      "Above Average": "#a6d96a",
+      "High":          "#1a9850",
+      "No Data":       "#ededed"
+    };
+
+    function buildLegend(selectedMetric) {
+      if (legendBuilt) return;
+      legendDiv.innerHTML = ""; // clear just in case
+      const title = document.createElement("div");
+      title.className = "legend-title";
+      title.textContent = `${selectedMetric} Category`;
+      legendDiv.appendChild(title);
+
+      for (const cat of catOrder) {
+        const sw = document.createElement("div");
+        sw.className = "swatch";
+        sw.style.background = colorMap[cat];
+
+        const lab = document.createElement("div");
+        lab.className = "label";
+        lab.textContent = cat;
+
+        legendDiv.appendChild(sw);
+        legendDiv.appendChild(lab);
+      }
+      legendBuilt = true;
+    }
+
+    function updateLegendTitle(selectedMetric) {
+      const titleEl = legendDiv.querySelector(".legend-title");
+      if (titleEl) titleEl.textContent = `${selectedMetric} Category`;
+    }
+
+    function updateMap() {
+      const selectedMetric = metricSelect.value;                // "AFI" or "AVI"
+      const categoryCol    = `${selectedMetric}_category`;      // e.g., "AFI_category"
+      const valueCol       = `${selectedMetric}_county`;        // e.g., "AFI_county"
+      const selectedState  = stateSelect.value;                 // "ALL" or a state name
+
+      // Build legend once; update title on metric change
+      buildLegend(selectedMetric);
+      updateLegendTitle(selectedMetric);
+
+      const features = (selectedState === "ALL")
+        ? allFeatures
+        : allFeatures.filter(f => f.properties?.State === selectedState);
+
+      const perCat = {};
+      catOrder.forEach(c => perCat[c] = { locations: [], custom: [] });
+
+      function getLoc(props, feature) {
+        return String(props?.county_fips_str || feature?.id || props?.id || "").padStart(5, "0");
+      }
+
+      for (const f of features) {
+        const p = f.properties || {};
+        if (!p.county_fips_str) continue;
+
+        let cat = p[categoryCol];
+        // normalize legacy labels
+        if (cat === "0–20%") cat = "Low";
+        else if (cat === "20–40%") cat = "Low Average";
+        else if (cat === "40–60%") cat = "Average";
+        else if (cat === "60–80%") cat = "Above Average";
+        else if (cat === "80–100%") cat = "High";
+        else if (typeof cat === "string" && cat.toLowerCase() === "no data") cat = "No Data";
+
+        if (!catOrder.includes(cat)) continue;
+
+        const loc = getLoc(p, f);
+        perCat[cat].locations.push(loc);
+        perCat[cat].custom.push([
+          p.State ?? "",         // 0
+          loc,                   // 1: FIPS
+          p[valueCol] ?? null,   // 2: metric value
+          p.median_fee ?? null,  // 3
+          cat                    // 4: category label
+        ]);
+      }
+
+      const traces = [];
+      for (const cat of catOrder) {
+        const data = perCat[cat];
+        if (!data.locations.length) continue;
+
+        const col = colorMap[cat];
+        traces.push({
+          type: "choropleth",
+          name: cat,
+          locations: data.locations,
+          z: new Array(data.locations.length).fill(1),
+          geojson: cleanGeojson,
+          featureidkey: "properties.county_fips_str",
+          colorscale: [[0, col], [1, col]],
+          showscale: false,
+          marker: { line: { width: 0.2, color: "#666" } },
+          hoverinfo: "skip",
+          customdata: data.custom,
+          hovertemplate:
+            "State: %{customdata[0]}<br>" +
+            "FIPS: %{customdata[1]}<br>" +
+            `${selectedMetric} category: %{customdata[4]}<br>` +
+            `${selectedMetric} (raw): %{customdata[2]:.3f}<br>` +
+            "Median fee: $%{customdata[3]:,.0f}<extra></extra>"
+        });
+      }
+
+      // ---- Alaska wrapping method (from Plotly community) ----
+      // Use Albers+fit for ALL, normal fit for other states, and a special wrapped lon range for AK
+      const isAll = (selectedState === "ALL");
+      const isAK  = (selectedState === "AK");
+
+      const layout = {
+        dragmode: false,
+        geo: isAll ? {
+          scope: "usa",
+          projection: { type: "albers usa" },
+          fitbounds: "Geojson",
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        } : (isAK ? {
+          // Alaska: wrap longitudes to 0–360 to avoid antimeridian fit crash
+          projection: { type: "albers usa", scale: 3 },
+          center: { lat: 61, lon: -150 },
+          lonaxis: { range: [20, 380] },  // <-- key: wrapped longitude range
+          lataxis: { range: [50, 100] },
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        } : {
+          // Other single states: use the simpler fit on locations
+          scope: "usa",
+          projection: { type: "albers usa" },
+          fitbounds: "locations",
+          visible: false,
+          showsubunits: true,
+          subunitcolor: "black"
+        }),
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        legend: {
+          title: { text: `${selectedMetric} Category`, font: { size: 16 } },
+          font: { size: 14 },
+          orientation: "h",
+          yanchor: "bottom", y: -0.08,
+          xanchor: "center", x: 0.5
+        }
+      };
+
+      Plotly.newPlot(mapDiv, traces, layout, { responsive: true, displayModeBar: true });
+    }
+
+    populateStates();
+    updateMap();
+
+    metricSelect.addEventListener("change", updateMap);
+    stateSelect.addEventListener("change", updateMap);
+  })();
+  </script>
+</body>
+</html>

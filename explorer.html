@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Variable Relationship Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root { --max: 1400px; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    nav {
+      max-width: var(--max);
+      margin: 0 auto 20px;
+      padding: 12px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    nav a {
+      color: #1a9850;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    header {
+      max-width: var(--max);
+      margin: 0 auto 10px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+
+    p.sub {
+      margin: 0;
+      color: #555;
+    }
+
+    #controls {
+      max-width: var(--max);
+      margin: 20px auto 10px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      padding: 16px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+    }
+
+    .control-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 4px;
+    }
+
+    .control-group select {
+      font-size: 14px;
+      padding: 8px 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+
+    #stats-panel {
+      max-width: var(--max);
+      margin: 12px auto;
+      padding: 16px;
+      background-color: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a9850;
+      margin-top: 4px;
+    }
+
+    #plot {
+      width: 100%;
+      height: 700px;
+      max-width: var(--max);
+      margin: 12px auto 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+
+    .note {
+      max-width: var(--max);
+      margin: 8px auto;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="landing.html">← Back to Home</a>
+  </nav>
+
+  <header>
+    <h1>Variable Relationship Explorer</h1>
+    <p class="sub">Examine correlations between demographic, economic, and accessibility metrics</p>
+  </header>
+
+  <div id="controls">
+    <div class="control-group">
+      <label for="x-select">X-Axis Variable</label>
+      <select id="x-select">
+        <option value="median_family_income" selected>Median Family Income</option>
+        <option value="disposable_income">Disposable Income</option>
+        <option value="median_fee">Median Provider Fee</option>
+        <option value="pct_medicaid">% Accepting Medicaid</option>
+        <option value="pct_sliding_scale">% Offering Sliding Scale</option>
+        <option value="n_observations">Number of Providers</option>
+        <option value="pct_male">% Male Providers</option>
+        <option value="pct_female">% Female Providers</option>
+        <option value="pct_non_hisp_white">% Non-Hispanic White</option>
+        <option value="pct_non_white">% Non-White</option>
+        <option value="pct_black">% Black</option>
+        <option value="pct_hispanic">% Hispanic</option>
+        <option value="pct_asian">% Asian</option>
+        <option value="PARTISAN_INDEX_DEM">Democratic Partisan Index</option>
+        <option value="PARTISAN_INDEX_REP">Republican Partisan Index</option>
+        <option value="cost_of_living">Cost of Living</option>
+        <option value="gini">Gini Coefficient (Inequality)</option>
+        <option value="AVI_county_wins_05">AVI County (0.5 threshold)</option>
+        <option value="AFI_county_wins_05">AFI County (0.5 threshold)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="y-select">Y-Axis Variable</label>
+      <select id="y-select">
+        <option value="AFI_county_wins_05" selected>AFI County (0.5 threshold)</option>
+        <option value="AVI_county_wins_05">AVI County (0.5 threshold)</option>
+        <option value="median_family_income">Median Family Income</option>
+        <option value="disposable_income">Disposable Income</option>
+        <option value="median_fee">Median Provider Fee</option>
+        <option value="pct_medicaid">% Accepting Medicaid</option>
+        <option value="pct_sliding_scale">% Offering Sliding Scale</option>
+        <option value="n_observations">Number of Providers</option>
+        <option value="pct_male">% Male Providers</option>
+        <option value="pct_female">% Female Providers</option>
+        <option value="pct_non_hisp_white">% Non-Hispanic White</option>
+        <option value="pct_non_white">% Non-White</option>
+        <option value="pct_black">% Black</option>
+        <option value="pct_hispanic">% Hispanic</option>
+        <option value="pct_asian">% Asian</option>
+        <option value="PARTISAN_INDEX_DEM">Democratic Partisan Index</option>
+        <option value="PARTISAN_INDEX_REP">Republican Partisan Index</option>
+        <option value="cost_of_living">Cost of Living</option>
+        <option value="gini">Gini Coefficient (Inequality)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="color-select">Color By</label>
+      <select id="color-select">
+        <option value="none">None (Single Color)</option>
+        <option value="State">State</option>
+        <option value="AFI_category">AFI Category</option>
+        <option value="AVI_category">AVI Category</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="stats-panel">
+    <div class="stat-item">
+      <span class="stat-label">Correlation (r)</span>
+      <span class="stat-value" id="corr-value">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Sample Size</span>
+      <span class="stat-value" id="n-value">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">R² (Variance Explained)</span>
+      <span class="stat-value" id="r2-value">—</span>
+    </div>
+  </div>
+
+  <div id="plot"></div>
+  <div class="note">Click and drag to zoom. Double-click to reset view. Hover over points for detailed information.</div>
+
+  <script>
+  (async function () {
+    const xSelect = document.getElementById("x-select");
+    const ySelect = document.getElementById("y-select");
+    const colorSelect = document.getElementById("color-select");
+    const plotDiv = document.getElementById("plot");
+    const corrValue = document.getElementById("corr-value");
+    const nValue = document.getElementById("n-value");
+    const r2Value = document.getElementById("r2-value");
+
+    let allFeatures = [];
+
+    // Variable display names and units
+    const varLabels = {
+      "n_observations": "Number of Providers",
+      "median_fee": "Median Provider Fee ($)",
+      "pct_male": "% Male Providers",
+      "pct_female": "% Female Providers",
+      "pct_medicaid": "% Accepting Medicaid",
+      "median_family_income": "Median Family Income ($)",
+      "disposable_income": "Disposable Income ($)",
+      "pct_sliding_scale": "% Offering Sliding Scale",
+      "pct_non_hisp_white": "% Non-Hispanic White",
+      "pct_non_white": "% Non-White",
+      "pct_black": "% Black",
+      "pct_hispanic": "% Hispanic",
+      "pct_asian": "% Asian",
+      "PARTISAN_INDEX_DEM": "Democratic Partisan Index",
+      "PARTISAN_INDEX_REP": "Republican Partisan Index",
+      "cost_of_living": "Cost of Living Index",
+      "gini": "Gini Coefficient",
+      "AVI_county_wins_05": "AVI County Score",
+      "AFI_county_wins_05": "AFI County Score"
+    };
+
+    try {
+      plotDiv.innerHTML = '<div class="loading">Loading data...</div>';
+      const url = "data/counties_with_data.geojson";
+      const geojson = await fetch(url, { cache: "no-store" }).then(r => r.json());
+      allFeatures = (geojson && geojson.features) ? geojson.features : [];
+
+      allFeatures = allFeatures.filter(f => {
+        const g = f && f.geometry;
+        return g && g.type && Array.isArray(g.coordinates) && g.coordinates.length > 0;
+      });
+    } catch (err) {
+      plotDiv.innerHTML = `<div class="loading"><h2>Error loading data</h2><p>${err.message}</p></div>`;
+      return;
+    }
+
+    function calculateCorrelation(x, y) {
+      const n = x.length;
+      if (n === 0) return { r: 0, r2: 0 };
+
+      const meanX = x.reduce((a, b) => a + b, 0) / n;
+      const meanY = y.reduce((a, b) => a + b, 0) / n;
+
+      let num = 0, denX = 0, denY = 0;
+      for (let i = 0; i < n; i++) {
+        const dx = x[i] - meanX;
+        const dy = y[i] - meanY;
+        num += dx * dy;
+        denX += dx * dx;
+        denY += dy * dy;
+      }
+
+      const r = num / Math.sqrt(denX * denY);
+      const r2 = r * r;
+      return { r: isNaN(r) ? 0 : r, r2: isNaN(r2) ? 0 : r2 };
+    }
+
+    function calculateTrendline(x, y) {
+      const n = x.length;
+      if (n === 0) return { slope: 0, intercept: 0 };
+
+      const meanX = x.reduce((a, b) => a + b, 0) / n;
+      const meanY = y.reduce((a, b) => a + b, 0) / n;
+
+      let num = 0, den = 0;
+      for (let i = 0; i < n; i++) {
+        num += (x[i] - meanX) * (y[i] - meanY);
+        den += (x[i] - meanX) * (x[i] - meanX);
+      }
+
+      const slope = num / den;
+      const intercept = meanY - slope * meanX;
+      return { slope, intercept };
+    }
+
+    function updatePlot() {
+      const xVar = xSelect.value;
+      const yVar = ySelect.value;
+      const colorVar = colorSelect.value;
+
+      // Extract data
+      const data = [];
+      for (const f of allFeatures) {
+        const p = f.properties || {};
+        const xVal = p[xVar];
+        const yVal = p[yVar];
+
+        // Skip if either value is missing or invalid
+        if (xVal == null || yVal == null || isNaN(xVal) || isNaN(yVal)) continue;
+
+        data.push({
+          x: xVal,
+          y: yVal,
+          state: p.State || "Unknown",
+          fips: p.county_fips_str || "",
+          colorVal: colorVar === "none" ? "All Counties" : (p[colorVar] || "Unknown"),
+          afiCat: p.AFI_category || "Unknown",
+          aviCat: p.AVI_category || "Unknown"
+        });
+      }
+
+      if (data.length === 0) {
+        plotDiv.innerHTML = '<div class="loading">No valid data for selected variables</div>';
+        corrValue.textContent = "—";
+        nValue.textContent = "0";
+        r2Value.textContent = "—";
+        return;
+      }
+
+      // Calculate correlation
+      const xVals = data.map(d => d.x);
+      const yVals = data.map(d => d.y);
+      const { r, r2 } = calculateCorrelation(xVals, yVals);
+      const { slope, intercept } = calculateTrendline(xVals, yVals);
+
+      // Update stats
+      corrValue.textContent = r.toFixed(3);
+      nValue.textContent = data.length.toLocaleString();
+      r2Value.textContent = r2.toFixed(3);
+
+      // Group by color variable
+      const groups = {};
+      for (const d of data) {
+        if (!groups[d.colorVal]) groups[d.colorVal] = [];
+        groups[d.colorVal].push(d);
+      }
+
+      // Category colors for AFI/AVI
+      const categoryColors = {
+        "Low": "#fef6e4",
+        "Low Average": "#fcd5a5",
+        "Average": "#f4a261",
+        "Above Average": "#a6d96a",
+        "High": "#1a9850",
+        "No Data": "#ededed"
+      };
+
+      // Create traces
+      const traces = [];
+      const colorKeys = Object.keys(groups).sort();
+
+      for (const key of colorKeys) {
+        const groupData = groups[key];
+
+        let markerColor = "#1a9850"; // default green
+        if (colorVar === "AFI_category" || colorVar === "AVI_category") {
+          markerColor = categoryColors[key] || "#999";
+        } else if (colorVar !== "none") {
+          // Use a hash to generate consistent colors for states
+          const hash = key.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const hue = (hash * 137.5) % 360;
+          markerColor = `hsl(${hue}, 60%, 50%)`;
+        }
+
+        traces.push({
+          type: "scatter",
+          mode: "markers",
+          name: key,
+          x: groupData.map(d => d.x),
+          y: groupData.map(d => d.y),
+          customdata: groupData.map(d => [d.state, d.fips, d.afiCat, d.aviCat]),
+          hovertemplate:
+            `<b>%{customdata[0]}</b><br>` +
+            `FIPS: %{customdata[1]}<br>` +
+            `${varLabels[xVar]}: %{x:.2f}<br>` +
+            `${varLabels[yVar]}: %{y:.2f}<br>` +
+            `AFI: %{customdata[2]}<br>` +
+            `AVI: %{customdata[3]}<extra></extra>`,
+          marker: {
+            size: 6,
+            color: markerColor,
+            opacity: 0.6,
+            line: { width: 0.5, color: "#fff" }
+          }
+        });
+      }
+
+      // Add trendline
+      const xMin = Math.min(...xVals);
+      const xMax = Math.max(...xVals);
+      const trendX = [xMin, xMax];
+      const trendY = trendX.map(x => slope * x + intercept);
+
+      traces.push({
+        type: "scatter",
+        mode: "lines",
+        name: `Trend (r=${r.toFixed(2)})`,
+        x: trendX,
+        y: trendY,
+        line: {
+          color: "#e63946",
+          width: 2,
+          dash: "dash"
+        },
+        hoverinfo: "skip",
+        showlegend: true
+      });
+
+      const layout = {
+        xaxis: {
+          title: { text: varLabels[xVar], font: { size: 14 } },
+          gridcolor: "#e5e5e5",
+          zeroline: false
+        },
+        yaxis: {
+          title: { text: varLabels[yVar], font: { size: 14 } },
+          gridcolor: "#e5e5e5",
+          zeroline: false
+        },
+        hovermode: "closest",
+        plot_bgcolor: "#fafafa",
+        paper_bgcolor: "#fff",
+        margin: { l: 70, r: 40, t: 40, b: 70 },
+        legend: {
+          orientation: colorVar === "State" ? "v" : "h",
+          yanchor: colorVar === "State" ? "top" : "bottom",
+          y: colorVar === "State" ? 1 : -0.2,
+          xanchor: "left",
+          x: colorVar === "State" ? 1.02 : 0
+        }
+      };
+
+      const config = {
+        responsive: true,
+        displayModeBar: true,
+        modeBarButtonsToRemove: ["lasso2d", "select2d"],
+        displaylogo: false
+      };
+
+      Plotly.newPlot(plotDiv, traces, layout, config);
+    }
+
+    updatePlot();
+
+    xSelect.addEventListener("change", updatePlot);
+    ySelect.addEventListener("change", updatePlot);
+    colorSelect.addEventListener("change", updatePlot);
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+/* Mental Health Care Accessibility Explorer - Shared Styles */
+
+:root {
+  /* Layout */
+  --max-width: 1400px;
+
+  /* Colors */
+  --primary-green: #1a9850;
+  --primary-green-light: #a6d96a;
+  --accent-orange: #f4a261;
+  --accent-orange-light: #fcd5a5;
+  --accent-yellow: #fef6e4;
+  --accent-red: #e63946;
+  --accent-red-light: #e76f51;
+
+  /* Backgrounds */
+  --light-bg: #f9f9f9;
+  --card-bg: #ffffff;
+  --highlight-bg: #f0f7f4;
+  --legend-bg: #fafafa;
+
+  /* Text colors */
+  --text-primary: #333;
+  --text-secondary: #555;
+  --text-muted: #666;
+  --text-light: #999;
+
+  /* Borders */
+  --border-color: #ddd;
+  --border-light: #e5e5e5;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+
+  /* Border radius */
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 16px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background-color: var(--light-bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Navigation */
+nav {
+  max-width: var(--max-width);
+  margin: 0 auto 20px;
+  padding: 12px;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+nav a {
+  color: var(--primary-green);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.2s ease;
+}
+
+nav a:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+/* Headers */
+header {
+  max-width: var(--max-width);
+  margin: 0 auto 10px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+p.sub {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Controls and inputs */
+#controls {
+  max-width: var(--max-width);
+  margin: 20px auto 10px;
+  padding: 16px;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.control-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.control-group select {
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #ccc;
+  background-color: var(--card-bg);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.control-group select:hover {
+  border-color: var(--primary-green);
+}
+
+.control-group select:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(26, 152, 80, 0.1);
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary-green);
+  background-color: var(--primary-green);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #158a44;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button.secondary {
+  background-color: transparent;
+  color: var(--primary-green);
+}
+
+button.secondary:hover {
+  background-color: var(--highlight-bg);
+}
+
+/* Cards */
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-green);
+}
+
+/* Stats panels */
+.stats-panel,
+#stats-panel {
+  max-width: var(--max-width);
+  margin: 12px auto;
+  padding: 16px;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-green);
+}
+
+.stat-value.warning {
+  color: var(--accent-orange);
+}
+
+.stat-value.alert {
+  color: var(--accent-red);
+}
+
+/* Legend */
+#legend {
+  display: grid;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--legend-bg);
+}
+
+.legend-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+}
+
+.swatch,
+.legend-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+.label,
+.legend-label {
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Visualizations */
+#map,
+#plot {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 12px auto 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+#map {
+  height: 860px;
+}
+
+#plot {
+  height: 700px;
+}
+
+/* Notes and helper text */
+.note {
+  max-width: var(--max-width);
+  margin: 8px auto;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+/* Utility classes */
+.text-center {
+  text-align: center;
+}
+
+.mt-2 {
+  margin-top: 16px;
+}
+
+.mb-2 {
+  margin-bottom: 16px;
+}
+
+.flex {
+  display: flex;
+}
+
+.gap-2 {
+  gap: 16px;
+}
+
+.gap-3 {
+  gap: 24px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  body {
+    margin: 8px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  #controls {
+    padding: 12px;
+  }
+
+  #map {
+    height: 600px;
+  }
+
+  #plot {
+    height: 500px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 18px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  #map {
+    height: 400px;
+  }
+
+  #plot {
+    height: 400px;
+  }
+}
