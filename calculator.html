@@ -504,13 +504,25 @@
         }
       }
 
-      // Calculate statistics
+      // Calculate statistics with winsorization (5th and 95th percentiles)
       const afiValues = countyData.map(d => d.afi).sort((a, b) => a - b);
-      let median = 0;
       const n = afiValues.length;
+
+      // Winsorize AFI values at 5% and 95%
+      let winsorizedValues = [...afiValues];
+      if (n > 0) {
+        const lowerIdx = Math.floor(n * 0.05);
+        const upperIdx = Math.floor(n * 0.95);
+        const lowerBound = afiValues[lowerIdx];
+        const upperBound = afiValues[upperIdx];
+        winsorizedValues = afiValues.map(v => Math.max(lowerBound, Math.min(upperBound, v)));
+      }
+
+      // Calculate median from winsorized values
+      let median = 0;
       if (n > 0) {
         const mid = Math.floor(n / 2);
-        median = (n % 2 === 1) ? afiValues[mid] : (afiValues[mid - 1] + afiValues[mid]) / 2;
+        median = (n % 2 === 1) ? winsorizedValues[mid] : (winsorizedValues[mid - 1] + winsorizedValues[mid]) / 2;
       }
       const min = afiValues[0] || 0;
       const max = afiValues[afiValues.length - 1] || 0;
@@ -542,7 +554,6 @@
           colorscale: [[0, color], [1, color]],
           showscale: false,
           marker: { line: { width: 0.3, color: "#999" } },
-          hoverinfo: "none",
           customdata: data.map(d => [d.state, d.fips, d.afi, d.medianFee, d.disposableIncome]),
           hovertemplate:
             "<b>%{customdata[0]}</b><br>" +
@@ -559,10 +570,15 @@
         geo: {
           scope: "usa",
           projection: { type: "albers usa" },
-          fitbounds: "geojson",
           visible: false,
+          showland: true,
+          landcolor: "#e5e5e5",
+          showlakes: true,
+          lakecolor: "#ffffff",
+          showcountries: true,
+          countrycolor: "#999",
           showsubunits: true,
-          subunitcolor: "black"
+          subunitcolor: "#999"
         },
         margin: { l: 0, r: 0, t: 0, b: 0 }
       };
