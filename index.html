@@ -106,15 +106,52 @@
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 40px;
+      padding: 0;
       margin-top: 50px;
+      overflow: hidden;
+    }
+
+    .methodology-header {
+      padding: 24px 40px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 0.2s ease;
+    }
+
+    .methodology-header:hover {
+      background-color: var(--light-bg);
     }
 
     .methodology h2 {
       font-size: 24px;
-      margin: 0 0 24px;
+      margin: 0;
       color: var(--text-primary);
       font-weight: 600;
+    }
+
+    .methodology-toggle {
+      font-size: 24px;
+      color: var(--text-secondary);
+      transition: transform 0.3s ease;
+    }
+
+    .methodology-toggle.open {
+      transform: rotate(180deg);
+    }
+
+    .methodology-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      padding: 0 40px;
+    }
+
+    .methodology-content.open {
+      max-height: 3000px;
+      padding: 0 40px 40px;
     }
 
     .methodology h3 {
@@ -164,7 +201,7 @@
       <h1>Mental Health Care Accessibility Explorer</h1>
       <p class="subtitle">Interactive Tools for Analyzing County-Level Mental Health Care Affordability and Availability</p>
       <div class="description">
-        <p>This interactive web application provides comprehensive tools to explore mental health care accessibility across U.S. counties. Analyze affordability (AFI) and availability (AVI) metrics, examine relationships between socioeconomic variables, and model different payment scenarios to understand the financial burden of mental health care.</p>
+        <p>This site provides interactive visualizations of county-level mental health care availability (AVI) and affordability (AFI) across the United States. Users can explore geographic patterns, examine associations with county characteristics, and evaluate affordability under alternative payment scenarios.</p>
       </div>
     </header>
 
@@ -189,8 +226,12 @@
     </div>
 
     <div class="methodology">
-      <h2>Methodology</h2>
-      <p>We constructed two county-level indices to capture complementary dimensions of mental health care access: an Availability Index (AVI) and an Affordability Index (AFI). The AVI reflects the local supply of providers relative to population size, whereas the AFI captures the financial burden of initiating psychotherapy relative to household economic capacity.</p>
+      <div class="methodology-header" onclick="toggleMethodology()">
+        <h2>Methodology</h2>
+        <span class="methodology-toggle" id="methodology-toggle">▼</span>
+      </div>
+      <div class="methodology-content" id="methodology-content">
+        <p>We constructed two county-level indices to capture complementary dimensions of mental health care access: an Availability Index (AVI) and an Affordability Index (AFI). The AVI reflects the local supply of providers relative to population size, whereas the AFI captures the financial burden of initiating psychotherapy relative to household economic capacity.</p>
 
       <h3>Availability Index (AVI)</h3>
       <p>The Availability Index measures the density of mental health providers relative to the county population, serving as an indicator of service capacity available to residents. Higher AVI values indicate greater service availability.</p>
@@ -222,12 +263,23 @@
       <p>This inversion is applied only at the visualization layer to ensure that darker or "higher" color categories consistently represent more favorable access conditions across both indices.</p>
 
       <p><strong>AVI Interpretation:</strong> The Availability Index (AVI) follows standard interpretation: higher AVI values and higher AVI categories indicate greater provider availability per capita.</p>
+      </div>
     </div>
 
     <footer>
-      <p><strong>Data Source:</strong> Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S.</p>
+      <p><strong>Data Source:</strong> Park, J. et al. (2026). Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S. <em>(Manuscript under review)</em>.</p>
       <p>Mental Health Care Accessibility Explorer &copy; 2026</p>
     </footer>
   </div>
+
+  <script>
+    function toggleMethodology() {
+      const content = document.getElementById('methodology-content');
+      const toggle = document.getElementById('methodology-toggle');
+
+      content.classList.toggle('open');
+      toggle.classList.toggle('open');
+    }
+  </script>
 </body>
 </html>
