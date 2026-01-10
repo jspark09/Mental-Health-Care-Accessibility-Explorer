@@ -144,7 +144,7 @@
 </head>
 <body>
   <nav>
-    <a href="landing.html">← Back to Home</a>
+    <a href="index.html">← Back to Home</a>
   </nav>
 
   <header>
@@ -432,16 +432,17 @@
       traces.push({
         type: "scatter",
         mode: "lines",
-        name: `Trend (r=${r.toFixed(2)})`,
+        name: `Trend Line (r=${r.toFixed(2)})`,
         x: trendX,
         y: trendY,
         line: {
           color: "#e63946",
-          width: 2,
+          width: 3,
           dash: "dash"
         },
         hoverinfo: "skip",
-        showlegend: true
+        showlegend: true,
+        legendgroup: "trendline"
       });
 
       const layout = {
