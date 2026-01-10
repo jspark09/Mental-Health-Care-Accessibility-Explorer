@@ -71,19 +71,34 @@
 
     /* Legend styles */
     #legend {
-      margin-left: auto;
+      max-width: var(--max);
+      margin: 12px auto;
       display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 6px 12px;
-      align-items: center;
-      padding: 8px 10px;
-      border: 1px solid #e5e5e5;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      background-color: #fff;
       border-radius: 8px;
-      background: #fafafa;
+      border: 1px solid #ddd;
     }
-    #legend .legend-title { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: #444; margin-bottom: 2px; }
-    #legend .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); }
-    #legend .label { font-size: 12px; color: #333; white-space: nowrap; }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    .legend-label {
+      font-size: 13px;
+      color: #333;
+    }
 
     #map { width: 100%; height: 860px; max-width: var(--max); margin: 12px auto 0; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
     .note { max-width: var(--max); margin: 8px auto; color: #666; font-size: 13px; }
@@ -115,10 +130,10 @@
     </div>
 
     <button id="download-btn" class="download-btn">Download Map (PNG)</button>
-
-    <!-- Legend container (auto-populated in JS) -->
-    <div id="legend" aria-label="Map Legend"></div>
   </div>
+
+  <!-- Legend container (auto-populated in JS) -->
+  <div id="legend" aria-label="Map Legend"></div>
 
   <div id="map"></div>
   <div class="note"><strong>Data Source:</strong> Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S.</div>
@@ -181,29 +196,28 @@
     function buildLegend(selectedMetric) {
       if (legendBuilt) return;
       legendDiv.innerHTML = ""; // clear just in case
-      const title = document.createElement("div");
-      title.className = "legend-title";
-      title.textContent = `${selectedMetric} Category`;
-      legendDiv.appendChild(title);
 
       for (const cat of catOrder) {
-        const sw = document.createElement("div");
-        sw.className = "swatch";
-        sw.style.background = colorMap[cat];
+        const item = document.createElement("div");
+        item.className = "legend-item";
 
-        const lab = document.createElement("div");
-        lab.className = "label";
-        lab.textContent = cat;
+        const swatch = document.createElement("div");
+        swatch.className = "legend-swatch";
+        swatch.style.backgroundColor = colorMap[cat];
 
-        legendDiv.appendChild(sw);
-        legendDiv.appendChild(lab);
+        const label = document.createElement("span");
+        label.className = "legend-label";
+        label.textContent = cat;
+
+        item.appendChild(swatch);
+        item.appendChild(label);
+        legendDiv.appendChild(item);
       }
       legendBuilt = true;
     }
 
     function updateLegendTitle(selectedMetric) {
-      const titleEl = legendDiv.querySelector(".legend-title");
-      if (titleEl) titleEl.textContent = `${selectedMetric} Category`;
+      // No longer needed with new layout, but keeping for compatibility
     }
 
     function updateMap() {
