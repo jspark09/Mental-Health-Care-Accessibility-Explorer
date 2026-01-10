@@ -470,6 +470,28 @@
       return "#e63946";
     }
 
+    function quantileSorted(arr, q) {
+      // arr sorted ascending
+      const n = arr.length;
+      if (n === 0) return null;
+      const pos = (n - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      const next = arr[base + 1];
+      return (next === undefined) ? arr[base] : arr[base] + rest * (next - arr[base]);
+    }
+
+    function medianSorted(arr) {
+      const n = arr.length;
+      if (n === 0) return 0;
+      const mid = Math.floor(n / 2);
+      return (n % 2 === 1) ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+    }
+
+    function clamp(x, lo, hi) {
+      return Math.max(lo, Math.min(hi, x));
+    }
+
     function updateMap() {
       const sessions = parseInt(sessionsSlider.value);
       const scenario = scenarioSelect.value;
@@ -498,36 +520,35 @@
             state: p.State || "",
             afi: afi,
             medianFee: p.median_fee,
-            disposableIncome: p.disposable_income,
-            color: getColorForAFI(afi)
+            disposableIncome: p.disposable_income
           });
         }
       }
 
-      // Calculate statistics with winsorization (5th and 95th percentiles)
-      const afiValues = countyData.map(d => d.afi).sort((a, b) => a - b);
-      const n = afiValues.length;
+      // --- Winsorize AFI across counties (e.g., 5th/95th) ---
+      const afiRawSorted = countyData.map(d => d.afi).sort((a, b) => a - b);
+      const n = afiRawSorted.length;
 
-      // Winsorize AFI values at 5% and 95%
-      let winsorizedValues = [...afiValues];
+      let lo = null, hi = null;
       if (n > 0) {
-        const lowerIdx = Math.floor(n * 0.05);
-        const upperIdx = Math.floor(n * 0.95);
-        const lowerBound = afiValues[lowerIdx];
-        const upperBound = afiValues[upperIdx];
-        winsorizedValues = afiValues.map(v => Math.max(lowerBound, Math.min(upperBound, v)));
+        lo = quantileSorted(afiRawSorted, 0.05);
+        hi = quantileSorted(afiRawSorted, 0.95);
       }
 
-      // Calculate median from winsorized values
-      let median = 0;
-      if (n > 0) {
-        const mid = Math.floor(n / 2);
-        median = (n % 2 === 1) ? winsorizedValues[mid] : (winsorizedValues[mid - 1] + winsorizedValues[mid]) / 2;
+      // Attach winsorized AFI to each row and USE IT everywhere below
+      for (const d of countyData) {
+        d.afi_raw = d.afi;
+        d.afi = (lo == null || hi == null) ? d.afi_raw : clamp(d.afi_raw, lo, hi);
+        d.color = getColorForAFI(d.afi);
       }
-      const min = afiValues[0] || 0;
-      const max = afiValues[afiValues.length - 1] || 0;
-      const highBurden = afiValues.filter(v => v > 5).length;
-      const severeBurden = afiValues.filter(v => v > 10).length;
+
+      // --- Stats computed from winsorized AFI ---
+      const afiWinSorted = countyData.map(d => d.afi).sort((a, b) => a - b);
+      const median = medianSorted(afiWinSorted);
+      const min = afiWinSorted[0] || 0;
+      const max = afiWinSorted[afiWinSorted.length - 1] || 0;
+      const highBurden = afiWinSorted.filter(v => v > 5).length;
+      const severeBurden = afiWinSorted.filter(v => v > 10).length;
 
       medianAfiEl.textContent = median.toFixed(2) + "%";
       minAfiEl.textContent = min.toFixed(2) + "%";
@@ -554,13 +575,14 @@
           colorscale: [[0, color], [1, color]],
           showscale: false,
           marker: { line: { width: 0.3, color: "#999" } },
-          customdata: data.map(d => [d.state, d.fips, d.afi, d.medianFee, d.disposableIncome]),
+          customdata: data.map(d => [d.state, d.fips, d.afi, d.afi_raw, d.medianFee, d.disposableIncome]),
           hovertemplate:
             "<b>%{customdata[0]}</b><br>" +
             "FIPS: %{customdata[1]}<br>" +
-            "AFI: %{customdata[2]:.2f}%<br>" +
-            "Median Fee: $%{customdata[3]:,.0f}<br>" +
-            "Disposable Income: $%{customdata[4]:,.0f}<extra></extra>",
+            "AFI (winsorized): %{customdata[2]:.2f}%<br>" +
+            "AFI (raw): %{customdata[3]:.2f}%<br>" +
+            "Median Fee: $%{customdata[4]:,.0f}<br>" +
+            "Disposable Income: $%{customdata[5]:,.0f}<extra></extra>",
           showlegend: false
         });
       }
