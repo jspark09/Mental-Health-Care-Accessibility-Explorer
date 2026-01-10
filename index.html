@@ -102,44 +102,6 @@
       line-height: 1.6;
     }
 
-    .features {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 40px;
-      margin-top: 40px;
-    }
-
-    .features h2 {
-      font-size: 24px;
-      margin: 0 0 24px;
-      color: var(--text-primary);
-    }
-
-    .features ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-    }
-
-    .features li {
-      padding-left: 28px;
-      position: relative;
-      color: var(--text-secondary);
-    }
-
-    .features li::before {
-      content: "✓";
-      position: absolute;
-      left: 0;
-      color: var(--primary-green);
-      font-weight: bold;
-      font-size: 18px;
-    }
-
     footer {
       text-align: center;
       margin-top: 60px;
@@ -153,7 +115,6 @@
       h1 { font-size: 28px; }
       .subtitle { font-size: 16px; }
       .nav-cards { grid-template-columns: 1fr; }
-      .features ul { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -187,22 +148,8 @@
       </a>
     </div>
 
-    <div class="features">
-      <h2>Key Features</h2>
-      <ul>
-        <li>County-level choropleth maps with AFI and AVI metrics</li>
-        <li>Interactive filtering by state and metric type</li>
-        <li>Correlation analysis between 20+ variables</li>
-        <li>Custom scenario modeling for treatment costs</li>
-        <li>Publication-quality visualizations</li>
-        <li>Responsive design for desktop and tablet</li>
-        <li>Real-time data exploration and analysis</li>
-        <li>Professional tooltips and annotations</li>
-      </ul>
-    </div>
-
     <footer>
-      <p><strong>Data Source:</strong> County-level mental health care accessibility data including provider characteristics, demographic information, economic indicators, and calculated accessibility indices.</p>
+      <p><strong>Data Source:</strong> Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S.</p>
       <p>Mental Health Care Accessibility Explorer &copy; 2026</p>
     </footer>
   </div>
