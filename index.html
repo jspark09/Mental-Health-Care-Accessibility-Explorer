@@ -102,6 +102,46 @@
       line-height: 1.6;
     }
 
+    .methodology {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 40px;
+      margin-top: 50px;
+    }
+
+    .methodology h2 {
+      font-size: 24px;
+      margin: 0 0 24px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .methodology h3 {
+      font-size: 18px;
+      margin: 24px 0 12px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .methodology p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin: 0 0 16px;
+    }
+
+    .methodology .formula {
+      background-color: var(--light-bg);
+      padding: 16px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      margin: 16px 0;
+      color: var(--text-primary);
+    }
+
     footer {
       text-align: center;
       margin-top: 60px;
@@ -146,6 +186,25 @@
         <h3 class="card-title">Affordability Scenario Calculator</h3>
         <p class="card-description">Model different insurance payment scenarios (copays, deductibles, sliding scale) to understand how out-of-pocket costs vary across counties and impact affordability.</p>
       </a>
+    </div>
+
+    <div class="methodology">
+      <h2>Methodology</h2>
+
+      <h3>Affordability Index (AFI)</h3>
+      <p>The Affordability Index (AFI) measures the financial burden of mental health care as a percentage of disposable income. It is calculated as:</p>
+      <div class="formula">
+        AFI = (Total Out-of-Pocket Cost / Disposable Income) × 100
+      </div>
+      <p>Where total out-of-pocket cost varies based on the payment scenario (cash payment, copay, deductible with coinsurance, or sliding scale). Higher AFI values indicate greater financial burden. In the calculator tool, AFI values are winsorized at the 5th and 95th percentiles to improve visualization while maintaining data integrity.</p>
+
+      <h3>Availability Index (AVI)</h3>
+      <p>The Availability Index (AVI) measures the accessibility of mental health care providers in a given geographic area. It reflects the capacity of the local mental health care system to meet population needs, taking into account provider density, population characteristics, and service availability.</p>
+
+      <h3>Data Categories</h3>
+      <p>Both AFI and AVI are categorized into quintile-based groups for visualization:</p>
+      <p><strong>Low</strong> (0-20th percentile), <strong>Low Average</strong> (20-40th percentile), <strong>Average</strong> (40-60th percentile), <strong>Above Average</strong> (60-80th percentile), and <strong>High</strong> (80-100th percentile).</p>
+      <p>For AFI (burden metric), lower values indicate better affordability. For AVI (accessibility metric), higher values indicate better availability.</p>
     </div>
 
     <footer>

@@ -52,6 +52,23 @@
     .control-group label { font-size: 12px; font-weight: 600; color: #444; margin-bottom: 4px; }
     .control-group select { font-size: 16px; padding: 6px 8px; border-radius: 5px; border: 1px solid #ccc; }
 
+    .download-btn {
+      padding: 8px 16px;
+      background-color: #1a9850;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      align-self: flex-start;
+      margin-top: 18px;
+    }
+
+    .download-btn:hover {
+      background-color: #157a3f;
+    }
+
     /* Legend styles */
     #legend {
       margin-left: auto;
@@ -97,12 +114,14 @@
       </select>
     </div>
 
+    <button id="download-btn" class="download-btn">Download Map (PNG)</button>
+
     <!-- Legend container (auto-populated in JS) -->
     <div id="legend" aria-label="Map Legend"></div>
   </div>
 
   <div id="map"></div>
-  <div class="note">Data: counties_with_data.geojson (properties: county_fips_str, State, median_fee, pct_medicaid, median_family_income, disposable_income, AVI_/AFI_*)</div>
+  <div class="note"><strong>Data Source:</strong> Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S.</div>
 
   <script>
   (async function () {
@@ -311,6 +330,21 @@
 
     metricSelect.addEventListener("change", updateMap);
     stateSelect.addEventListener("change", updateMap);
+
+    // Download button functionality
+    const downloadBtn = document.getElementById("download-btn");
+    downloadBtn.addEventListener("click", () => {
+      const metric = metricSelect.value;
+      const state = stateSelect.value;
+      const filename = `accessibility_map_${metric}_${state}_${new Date().toISOString().split('T')[0]}.png`;
+
+      Plotly.downloadImage(mapDiv, {
+        format: 'png',
+        width: 1400,
+        height: 860,
+        filename: filename
+      });
+    });
   })();
   </script>
 </body>

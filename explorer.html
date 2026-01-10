@@ -86,6 +86,23 @@
       background-color: #fff;
     }
 
+    .download-btn {
+      padding: 8px 16px;
+      background-color: #1a9850;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      align-self: flex-start;
+      margin-top: 18px;
+    }
+
+    .download-btn:hover {
+      background-color: #157a3f;
+    }
+
     #stats-panel {
       max-width: var(--max);
       margin: 12px auto;
@@ -212,6 +229,8 @@
         <option value="AVI_category">AVI Category</option>
       </select>
     </div>
+
+    <button id="download-btn" class="download-btn">Download Plot (PNG)</button>
   </div>
 
   <div id="stats-panel">
@@ -226,7 +245,7 @@
   </div>
 
   <div id="plot"></div>
-  <div class="note">Click and drag to zoom. Double-click to reset view. Hover over points for detailed information.</div>
+  <div class="note">Click and drag to zoom. Double-click to reset view. Hover over points for detailed information. <strong>Data Source:</strong> Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S.</div>
 
   <script>
   (async function () {
@@ -477,6 +496,21 @@
     xSelect.addEventListener("change", updatePlot);
     ySelect.addEventListener("change", updatePlot);
     colorSelect.addEventListener("change", updatePlot);
+
+    // Download button functionality
+    const downloadBtn = document.getElementById("download-btn");
+    downloadBtn.addEventListener("click", () => {
+      const xVar = xSelect.options[xSelect.selectedIndex].text;
+      const yVar = ySelect.options[ySelect.selectedIndex].text;
+      const filename = `relationship_explorer_${xVar}_vs_${yVar}_${new Date().toISOString().split('T')[0]}.png`;
+
+      Plotly.downloadImage(plotDiv, {
+        format: 'png',
+        width: 1400,
+        height: 700,
+        filename: filename
+      });
+    });
   })();
   </script>
 </body>

@@ -206,6 +206,22 @@
       color: #e63946;
     }
 
+    .download-btn {
+      padding: 8px 16px;
+      background-color: #1a9850;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .download-btn:hover {
+      background-color: #157a3f;
+    }
+
     #map {
       width: 100%;
       height: 700px;
@@ -299,6 +315,8 @@
     <div class="scenario-description" id="scenario-desc">
       Select a payment scenario to see the description.
     </div>
+
+    <button id="download-btn" class="download-btn">Download Map (PNG)</button>
   </div>
 
   <div id="stats-panel">
@@ -639,6 +657,21 @@
 
     sessionsSlider.addEventListener("input", updateMap);
     scenarioSelect.addEventListener("change", updateMap);
+
+    // Download button functionality
+    const downloadBtn = document.getElementById("download-btn");
+    downloadBtn.addEventListener("click", () => {
+      const sessions = sessionsSlider.value;
+      const scenario = scenarioSelect.options[scenarioSelect.selectedIndex].text;
+      const filename = `affordability_calculator_${sessions}sessions_${scenario.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
+
+      Plotly.downloadImage(mapDiv, {
+        format: 'png',
+        width: 1400,
+        height: 700,
+        filename: filename
+      });
+    });
   })();
   </script>
 </body>
