@@ -385,37 +385,30 @@
       return;
     }
 
-    // Quintile-based color scheme for relative burden
-    const quintileColors = [
-      { label: "Bottom 20% (Lowest burden)", color: "#1a9850" },
-      { label: "20–40%", color: "#91cf60" },
-      { label: "40–60%", color: "#fee08b" },
-      { label: "60–80%", color: "#fc8d59" },
-      { label: "Top 20% (Highest burden)", color: "#d73027" }
-    ];
+    // Category-based color scheme matching map.html
+    const categories = ["Low", "Low Average", "Average", "Above Average", "High"];
+    const categoryColors = {
+      "Low":           "#1a9850",
+      "Low Average":   "#91cf60",
+      "Average":       "#fee08b",
+      "Above Average": "#fc8d59",
+      "High":          "#d73027"
+    };
 
-    function buildLegend(q20, q40, q60, q80) {
+    function buildLegend() {
       legendDiv.innerHTML = "";
 
-      const labels = [
-        `Bottom 20% (≤ ${q20.toFixed(2)}%)`,
-        `20–40% (${q20.toFixed(2)}–${q40.toFixed(2)}%)`,
-        `40–60% (${q40.toFixed(2)}–${q60.toFixed(2)}%)`,
-        `60–80% (${q60.toFixed(2)}–${q80.toFixed(2)}%)`,
-        `Top 20% (> ${q80.toFixed(2)}%)`
-      ];
-
-      for (let i = 0; i < quintileColors.length; i++) {
+      for (const cat of categories) {
         const item = document.createElement("div");
         item.className = "legend-item";
 
         const swatch = document.createElement("div");
         swatch.className = "legend-swatch";
-        swatch.style.backgroundColor = quintileColors[i].color;
+        swatch.style.backgroundColor = categoryColors[cat];
 
         const label = document.createElement("span");
         label.className = "legend-label";
-        label.textContent = labels[i];
+        label.textContent = cat;
 
         item.appendChild(swatch);
         item.appendChild(label);
@@ -471,12 +464,9 @@
       return (outOfPocket / disposableIncome) * 100;
     }
 
-    function getQuintileBucket(value, q20, q40, q60, q80) {
-      if (value <= q20) return 0;
-      if (value <= q40) return 1;
-      if (value <= q60) return 2;
-      if (value <= q80) return 3;
-      return 4;
+    function getCategoryFromQuintile(quintile) {
+      // Map quintile (0-4) to category labels
+      return categories[quintile];
     }
 
     function quantileSorted(arr, q) {
@@ -558,10 +548,17 @@
       const q60 = quantileSorted(afiWinSorted, 0.60);
       const q80 = quantileSorted(afiWinSorted, 0.80);
 
-      // Assign quintile bucket and color to each county
+      // Assign quintile bucket, category, and color to each county
       for (const d of countyData) {
-        d.quintile = getQuintileBucket(d.afi, q20, q40, q60, q80);
-        d.color = quintileColors[d.quintile].color;
+        // Determine quintile bucket (0-4)
+        if (d.afi <= q20) d.quintile = 0;
+        else if (d.afi <= q40) d.quintile = 1;
+        else if (d.afi <= q60) d.quintile = 2;
+        else if (d.afi <= q80) d.quintile = 3;
+        else d.quintile = 4;
+
+        d.category = getCategoryFromQuintile(d.quintile);
+        d.color = categoryColors[d.category];
       }
 
       // --- Stats computed from winsorized AFI ---
@@ -596,12 +593,12 @@
           colorscale: [[0, color], [1, color]],
           showscale: false,
           marker: { line: { width: 0.3, color: "#999" } },
-          customdata: data.map(d => [d.state, d.fips, d.afi, d.quintile + 1, d.medianFee, d.disposableIncome]),
+          customdata: data.map(d => [d.state, d.fips, d.afi, d.category, d.medianFee, d.disposableIncome]),
           hovertemplate:
             "<b>%{customdata[0]}</b><br>" +
             "FIPS: %{customdata[1]}<br>" +
-            "AFI (winsorized): %{customdata[2]:.2f}%<br>" +
-            "Quintile: %{customdata[3]} of 5<br>" +
+            "AFI: %{customdata[2]:.2f}%<br>" +
+            "Category: %{customdata[3]}<br>" +
             "Median Fee: $%{customdata[4]:,.0f}<br>" +
             "Disposable Income: $%{customdata[5]:,.0f}<extra></extra>",
           showlegend: false
@@ -633,11 +630,10 @@
       };
 
       Plotly.newPlot(mapDiv, traces, layout, config);
-
-      // Update legend with quintile cutpoints
-      buildLegend(q20, q40, q60, q80);
     }
 
+    // Build legend once
+    buildLegend();
     updateMap();
 
     sessionsSlider.addEventListener("input", updateMap);
