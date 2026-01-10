@@ -385,28 +385,37 @@
       return;
     }
 
-    // AFI categories and colors
-    const afiRanges = [
-      { max: 2, label: "Very Low (< 2%)", color: "#1a9850" },
-      { max: 5, label: "Low (2-5%)", color: "#a6d96a" },
-      { max: 10, label: "Moderate (5-10%)", color: "#f4a261" },
-      { max: 15, label: "High (10-15%)", color: "#e76f51" },
-      { max: Infinity, label: "Very High (> 15%)", color: "#e63946" }
+    // Quintile-based color scheme for relative burden
+    const quintileColors = [
+      { label: "Bottom 20% (Lowest burden)", color: "#1a9850" },
+      { label: "20–40%", color: "#91cf60" },
+      { label: "40–60%", color: "#fee08b" },
+      { label: "60–80%", color: "#fc8d59" },
+      { label: "Top 20% (Highest burden)", color: "#d73027" }
     ];
 
-    function buildLegend() {
+    function buildLegend(q20, q40, q60, q80) {
       legendDiv.innerHTML = "";
-      for (const range of afiRanges) {
+
+      const labels = [
+        `Bottom 20% (≤ ${q20.toFixed(2)}%)`,
+        `20–40% (${q20.toFixed(2)}–${q40.toFixed(2)}%)`,
+        `40–60% (${q40.toFixed(2)}–${q60.toFixed(2)}%)`,
+        `60–80% (${q60.toFixed(2)}–${q80.toFixed(2)}%)`,
+        `Top 20% (> ${q80.toFixed(2)}%)`
+      ];
+
+      for (let i = 0; i < quintileColors.length; i++) {
         const item = document.createElement("div");
         item.className = "legend-item";
 
         const swatch = document.createElement("div");
         swatch.className = "legend-swatch";
-        swatch.style.backgroundColor = range.color;
+        swatch.style.backgroundColor = quintileColors[i].color;
 
         const label = document.createElement("span");
         label.className = "legend-label";
-        label.textContent = range.label;
+        label.textContent = labels[i];
 
         item.appendChild(swatch);
         item.appendChild(label);
@@ -462,12 +471,12 @@
       return (outOfPocket / disposableIncome) * 100;
     }
 
-    function getColorForAFI(afi) {
-      if (afi == null) return "#ededed";
-      for (const range of afiRanges) {
-        if (afi < range.max) return range.color;
-      }
-      return "#e63946";
+    function getQuintileBucket(value, q20, q40, q60, q80) {
+      if (value <= q20) return 0;
+      if (value <= q40) return 1;
+      if (value <= q60) return 2;
+      if (value <= q80) return 3;
+      return 4;
     }
 
     function quantileSorted(arr, q) {
@@ -539,11 +548,23 @@
       for (const d of countyData) {
         d.afi_raw = d.afi;
         d.afi = (lo == null || hi == null) ? d.afi_raw : clamp(d.afi_raw, lo, hi);
-        d.color = getColorForAFI(d.afi);
+      }
+
+      // --- Compute quintile cutpoints on winsorized AFI ---
+      const afiWinSorted = countyData.map(d => d.afi).sort((a, b) => a - b);
+
+      const q20 = quantileSorted(afiWinSorted, 0.20);
+      const q40 = quantileSorted(afiWinSorted, 0.40);
+      const q60 = quantileSorted(afiWinSorted, 0.60);
+      const q80 = quantileSorted(afiWinSorted, 0.80);
+
+      // Assign quintile bucket and color to each county
+      for (const d of countyData) {
+        d.quintile = getQuintileBucket(d.afi, q20, q40, q60, q80);
+        d.color = quintileColors[d.quintile].color;
       }
 
       // --- Stats computed from winsorized AFI ---
-      const afiWinSorted = countyData.map(d => d.afi).sort((a, b) => a - b);
       const median = medianSorted(afiWinSorted);
       const min = afiWinSorted[0] || 0;
       const max = afiWinSorted[afiWinSorted.length - 1] || 0;
@@ -575,12 +596,12 @@
           colorscale: [[0, color], [1, color]],
           showscale: false,
           marker: { line: { width: 0.3, color: "#999" } },
-          customdata: data.map(d => [d.state, d.fips, d.afi, d.afi_raw, d.medianFee, d.disposableIncome]),
+          customdata: data.map(d => [d.state, d.fips, d.afi, d.quintile + 1, d.medianFee, d.disposableIncome]),
           hovertemplate:
             "<b>%{customdata[0]}</b><br>" +
             "FIPS: %{customdata[1]}<br>" +
             "AFI (winsorized): %{customdata[2]:.2f}%<br>" +
-            "AFI (raw): %{customdata[3]:.2f}%<br>" +
+            "Quintile: %{customdata[3]} of 5<br>" +
             "Median Fee: $%{customdata[4]:,.0f}<br>" +
             "Disposable Income: $%{customdata[5]:,.0f}<extra></extra>",
           showlegend: false
@@ -612,9 +633,11 @@
       };
 
       Plotly.newPlot(mapDiv, traces, layout, config);
+
+      // Update legend with quintile cutpoints
+      buildLegend(q20, q40, q60, q80);
     }
 
-    buildLegend();
     updateMap();
 
     sessionsSlider.addEventListener("input", updateMap);
