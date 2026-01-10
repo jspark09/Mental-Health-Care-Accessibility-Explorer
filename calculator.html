@@ -372,6 +372,14 @@
       });
 
       cleanGeojson = { type: "FeatureCollection", features: allFeatures };
+
+      // Normalize FIPS codes
+      for (const f of cleanGeojson.features) {
+        const p = f.properties || (f.properties = {});
+        if (p.county_fips_str != null) {
+          p.county_fips_str = String(p.county_fips_str).padStart(5, "0");
+        }
+      }
     } catch (err) {
       mapDiv.innerHTML = `<div class="loading"><h2>Error loading data</h2><p>${err.message}</p></div>`;
       return;
@@ -443,8 +451,9 @@
           break;
         }
         case "sliding": {
-          const pct = (pctSlidingScale || 0) / 100; // convert percentage to decimal
-          const discount = 0.30 * pct;
+          let p = Number(pctSlidingScale || 0);
+          if (p > 1) p = p / 100; // convert 0-100 to 0-1
+          const discount = 0.30 * p;
           outOfPocket = medianFee * (1 - discount) * sessions;
           break;
         }
@@ -472,11 +481,12 @@
       const countyData = [];
       for (const f of allFeatures) {
         const p = f.properties || {};
-        if (!p.county_fips_str) continue;
+        const fips = p.county_fips_str; // already padded
+        if (!fips) continue;
 
         const afi = calculateAFI(
-          p.median_fee,
-          p.disposable_income,
+          Number(p.median_fee),
+          Number(p.disposable_income),
           p.pct_sliding_scale,
           sessions,
           scenario
@@ -484,7 +494,7 @@
 
         if (afi != null) {
           countyData.push({
-            fips: String(p.county_fips_str).padStart(5, "0"),
+            fips: fips,
             state: p.State || "",
             afi: afi,
             medianFee: p.median_fee,
@@ -496,7 +506,12 @@
 
       // Calculate statistics
       const afiValues = countyData.map(d => d.afi).sort((a, b) => a - b);
-      const median = afiValues[Math.floor(afiValues.length / 2)] || 0;
+      let median = 0;
+      const n = afiValues.length;
+      if (n > 0) {
+        const mid = Math.floor(n / 2);
+        median = (n % 2 === 1) ? afiValues[mid] : (afiValues[mid - 1] + afiValues[mid]) / 2;
+      }
       const min = afiValues[0] || 0;
       const max = afiValues[afiValues.length - 1] || 0;
       const highBurden = afiValues.filter(v => v > 5).length;
@@ -527,7 +542,7 @@
           colorscale: [[0, color], [1, color]],
           showscale: false,
           marker: { line: { width: 0.3, color: "#999" } },
-          hoverinfo: "skip",
+          hoverinfo: "none",
           customdata: data.map(d => [d.state, d.fips, d.afi, d.medianFee, d.disposableIncome]),
           hovertemplate:
             "<b>%{customdata[0]}</b><br>" +
