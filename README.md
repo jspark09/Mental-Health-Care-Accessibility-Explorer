@@ -61,6 +61,7 @@ The AFI is expressed as a percentage. For example, an AFI of 3% indicates that t
 To ensure robust statistical analysis and improve visualization:
 
 - **AFI values** are winsorized at the 5th and 95th percentiles
+- Counties with negative disposable income (where living costs exceed median household income) are assigned the 95th percentile value, representing the highest financial burden
 - Extreme values exist in the raw data; refer to the data source for complete information
 - Winsorization reduces the influence of outliers while maintaining the overall distribution
 

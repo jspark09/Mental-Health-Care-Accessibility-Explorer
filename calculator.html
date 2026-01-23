@@ -346,7 +346,7 @@
 
   <div id="legend"></div>
   <div id="map"></div>
-  <div class="note">AFI (Affordability Index) = Total out-of-pocket cost / Disposable income × 100. Higher values indicate greater financial burden. Note: AFI values are winsorized at the 5th and 95th percentiles for visualization. Some counties may have more extreme values; refer to the data source for complete information.</div>
+  <div class="note">AFI (Affordability Index) = Total out-of-pocket cost / Disposable income × 100. Higher values indicate greater financial burden. Note: AFI values are winsorized at the 5th and 95th percentiles for visualization. Counties with negative disposable income (where living costs exceed median household income) are assigned the 95th percentile value, representing the highest financial burden. Some counties may have more extreme values; refer to the data source for complete information.</div>
 
   <script>
   (async function () {
@@ -554,9 +554,16 @@
       }
 
       // Attach winsorized AFI to each row and USE IT everywhere below
+      // Negative AFI values (negative disposable income) are mapped to upper quantile (worst affordability)
       for (const d of countyData) {
         d.afi_raw = d.afi;
-        d.afi = (lo == null || hi == null) ? d.afi_raw : clamp(d.afi_raw, lo, hi);
+        if (lo == null || hi == null) {
+          d.afi = d.afi_raw;
+        } else if (d.afi_raw < 0) {
+          d.afi = hi;  // negative values → upper quantile
+        } else {
+          d.afi = clamp(d.afi_raw, lo, hi);  // standard winsorization
+        }
       }
 
       // --- Compute quintile cutpoints on winsorized AFI ---
