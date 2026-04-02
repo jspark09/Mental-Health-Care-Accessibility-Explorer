@@ -4,6 +4,11 @@
 
 This repository contains an interactive web application that visualizes and analyzes mental health care accessibility across U.S. counties using a two-dimensional framework of availability and affordability.
 
+## Access
+
+The application is deployed via GitHub Pages and can be accessed at:
+[https://jspark09.github.io/Mental-Health-Care-Accessibility-Explorer/](https://jspark09.github.io/Mental-Health-Care-Accessibility-Explorer/)
+
 ## Overview
 
 Access to mental health care encompasses two critical dimensions:
@@ -142,11 +147,6 @@ This application supports:
 - **Policy planning** to identify underserved areas
 - **Educational purposes** to understand geographic health disparities
 - **Publication-quality figures** for academic manuscripts
-
-## Access
-
-The application is deployed via GitHub Pages and can be accessed at:
-[https://anonymousforreview23-ctrl.github.io/accessibility_map/](https://anonymousforreview23-ctrl.github.io/accessibility_map/)
 
 ## Citation
 
