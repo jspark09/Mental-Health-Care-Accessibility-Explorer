@@ -146,13 +146,13 @@ This application supports:
 ## Access
 
 The application is deployed via GitHub Pages and can be accessed at:
-Park, J. (2026). Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S. (Software). Zenodo. https://doi.org/10.5281/zenodo.19392686
+[https://anonymousforreview23-ctrl.github.io/accessibility_map/](https://anonymousforreview23-ctrl.github.io/accessibility_map/)
 
 ## Citation
 
 If you use this application or data in your research, please cite:
 
-**Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S.**
+**Park, J., Kim, H. R., Duffy, R., Vogel, D., Keum, B. T., Lee, S., & Tomé, N. (2026). Two Dimensions of Access: Availability and Affordability of Mental Health Care Across the U.S. (Software). Zenodo. https://doi.org/10.5281/zenodo.19392686**
 
 ---
 
